@@ -34,6 +34,10 @@ impl ConstEvalExpr for Expr {
                 size: l.size,
             }),
             BinOp(b) => b.const_eval(options),
+            Contains(c) => Contains( ir::Contains {
+                left: Box::new(c.left.const_eval(options)),
+                right: Box::new(c.right.const_eval(options)),
+            }),
             UnOp(u) => u.const_eval(options),
             Shift(s) => s.const_eval(options),
             BaseAddr => Const(0),
@@ -55,6 +59,7 @@ impl ConstEvalExpr for Expr {
             ArrayAccess(a) => ArrayAccess(ir::ArrayAccess {
                 obj: Box::new(a.obj.const_eval(options)),
                 idx: Box::new(a.idx.const_eval(options)),
+                mem_type: a.mem_type,
             }),
             AccessPredicate(a) => AccessPredicate(ir::AccessPredicate {
                 field: Box::new(a.field.const_eval(options)),
@@ -75,6 +80,7 @@ impl ConstEvalExpr for Expr {
                 upper: Box::new(a.upper.const_eval(options)),
                 typ: a.typ,
                 perm: a.perm,
+                mem: a.mem,
             }),
             Old(o) => Old(ir::Old {
                 expr: Box::new(o.expr.const_eval(options)),
@@ -313,6 +319,7 @@ impl ConstEval for Program {
             model: self.model.const_eval(options),
             extern_predicates: self.extern_predicates,
             extern_fields: self.extern_fields,
+            extern_consts: self.extern_consts,
             extern_methods: self.extern_methods,
         }
     }

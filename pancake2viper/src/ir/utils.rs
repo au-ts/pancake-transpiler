@@ -249,6 +249,11 @@ impl ExprSubstitution for Expr {
                 let b = op.right.substitute(old, new);
                 a || b
             }
+            Self::Contains(c) => {
+                let a = c.left.substitute(old, new);
+                let b = c.right.substitute(old, new);
+                a || b
+            }
             Self::UnOp(op) => op.right.substitute(old, new),
             Self::Field(field) => field.obj.substitute(old, new),
             Self::Load(load) => load.address.substitute(old, new),

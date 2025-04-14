@@ -152,6 +152,7 @@ impl App {
             method_ctx,
             model.clone(),
             program.extern_methods.clone(),
+            program.extern_fields.clone(),
         );
         let gen_methods = shared.gen_boilerplate(&mut ctx, &model)?;
         let program = viper_handle.ast.program(&[], &[], &[], &[], &gen_methods);
@@ -205,10 +206,12 @@ impl App {
         .try_into()?;
         let encode_opts = self.options.clone().into();
 
+        let fields_set = program.model.fields.clone().into_iter().collect::<HashSet<String>>();
+        let consts_set = program.extern_consts.keys().cloned().collect::<HashSet<String>>();
+        let mangler_set = fields_set.union(&consts_set).cloned().collect::<HashSet<String>>();
+
         run_step!(self, "Mangling", {
-            program.mangle(&mut Mangler::new(
-                program.model.fields.clone().into_iter().collect(),
-            ))?
+            program.mangle(&mut Mangler::new(mangler_set))?
         });
 
         let ctx = run_step!(self, "Resolving types", { program.resolve_types()? });
@@ -247,6 +250,7 @@ impl App {
                 .map_err(|e| anyhow!(format!("Error: Could not write to output file:\n{}", e)))?;
         }
 
+        self.println("Transpilation done.");
         // Verify the Viper code
         if self.options.cmd.is_verify() {
             if self.options.incremental {

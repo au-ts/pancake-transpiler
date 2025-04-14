@@ -30,6 +30,7 @@ pub enum Expr {
     Old(Old),
     ViperFieldAccess(ViperFieldAccess),
     SeqLength(SeqLength),
+    Contains(Contains),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -117,6 +118,12 @@ pub struct BinOp {
     pub right: Box<Expr>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Contains {
+    pub left: Box<Expr>,
+    pub right: Box<Expr>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UnOpType {
     Neg,
@@ -167,6 +174,7 @@ pub struct Quantified {
 pub struct ArrayAccess {
     pub obj: Box<Expr>,
     pub idx: Box<Expr>,
+    pub mem_type: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -201,6 +209,7 @@ pub struct AccessSlice {
     pub lower: Box<Expr>,
     pub upper: Box<Expr>,
     pub perm: Permission,
+    pub mem: String,    
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

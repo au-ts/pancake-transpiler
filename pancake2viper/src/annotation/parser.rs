@@ -29,6 +29,7 @@ lazy_static::lazy_static! {
             .op(Op::postfix(Rule::shift))
             .op(Op::infix(Rule::add, Left) | Op::infix(Rule::sub, Left))
             .op(Op::infix(Rule::mul, Left) | Op::infix(Rule::div, Left) | Op::infix(Rule::modulo, Left))
+            .op(Op::infix(Rule::contains, Left))
             .op(Op::prefix(Rule::neg) | Op::prefix(Rule::minus))
             .op(Op::postfix(Rule::field_acc))
             .op(Op::postfix(Rule::viper_field_acc))
@@ -148,6 +149,11 @@ pub fn parse_extern_predicate(s: &str) -> ParseResult<String> {
 
 pub fn parse_extern_field(s: &str) -> ParseResult<Decl> {
     Ok(AnnotParser::parse(Rule::ext_field, s)
+        .map(|mut pairs| Decl::from_pest(pairs.next().unwrap().into_inner().next().unwrap()))?)
+}
+
+pub fn parse_extern_const(s: &str) -> ParseResult<Decl> {
+    Ok(AnnotParser::parse(Rule::ext_const, s)
         .map(|mut pairs| Decl::from_pest(pairs.next().unwrap().into_inner().next().unwrap()))?)
 }
 
@@ -294,11 +300,17 @@ fn parse_expr(pairs: Pairs<Rule>) -> Expr {
             })
         })
         .map_infix(|lhs, op, rhs| {
-            Expr::BinOp(BinOp {
-                optype: BinOpType::from_pest(op),
-                left: Box::new(lhs),
-                right: Box::new(rhs),
-            })
+            match op.as_rule() {
+                Rule::contains => { Expr::Contains( Contains {
+                    left: Box::new(lhs),
+                    right: Box::new(rhs),
+                })},
+                _ => { Expr::BinOp(BinOp {
+                    optype: BinOpType::from_pest(op),
+                    left: Box::new(lhs),
+                    right: Box::new(rhs),
+                })}
+            }
         })
         .map_postfix(|lhs, op| match op.as_rule() {
             Rule::field_acc => Expr::Field(Field {
@@ -309,10 +321,14 @@ fn parse_expr(pairs: Pairs<Rule>) -> Expr {
                 obj: Box::new(lhs),
                 field: op.as_str().trim_start_matches('.').to_string(),
             }),
-            Rule::arr_acc => Expr::ArrayAccess(ArrayAccess {
+            Rule::arr_acc => {
+                let mem_type = op.as_str().split('.').last().unwrap().to_string();
+                let idx = Box::new(parse_expr(op.into_inner()));
+                Expr::ArrayAccess(ArrayAccess {
                 obj: Box::new(lhs),
-                idx: Box::new(parse_expr(op.into_inner())),
-            }),
+                idx: idx,
+                mem_type: mem_type,
+            })},
             Rule::ternary => {
                 let mut pairs = op.into_inner();
                 Expr::Ternary(Ternary {
@@ -452,7 +468,6 @@ impl FromPestPair for Type {
         match pair.as_rule() {
             Rule::bool_t => Self::Bool,
             Rule::int_t => Self::Int,
-            Rule::iarray_t => Self::Array,
             Rule::ref_t => Self::Ref,
             Rule::map_t => {
                 let mut inner = pair.into_inner();
@@ -578,6 +593,7 @@ impl FromPestPair for AccessSlice {
         let lower = Box::new(parse_expr(Pairs::single(inner.next().unwrap())));
         let typ = SliceType::from_pest(inner.next().unwrap());
         let upper = Box::new(parse_expr(Pairs::single(inner.next().unwrap())));
+        let mem = inner.next().unwrap().as_str();
         let perm = inner
             .next()
             .map(Permission::from_pest)
@@ -588,6 +604,7 @@ impl FromPestPair for AccessSlice {
             lower,
             upper,
             perm,
+            mem: mem.to_string(),
         }
     }
 }

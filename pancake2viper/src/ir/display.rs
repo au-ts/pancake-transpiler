@@ -87,6 +87,7 @@ impl Display for Expr {
             Self::Ternary(t) => write!(f, "(({}) ? {} : {})", t.cond, t.left, t.right),
             Self::ViperFieldAccess(acc) => write!(f, "{}.{}", acc.obj, acc.field),
             Self::SeqLength(seq) => write!(f, "|{}|", seq.expr),
+            Self::Contains(c) => write!(f, "{} in {}", c.left, c.right),
         }
     }
 }
@@ -196,7 +197,6 @@ impl Display for Type {
             Self::Struct(s) => write!(f, "{}", Shape::Nested(s.to_vec())),
             Self::Wildcard => write!(f, "*"),
             Self::Void => write!(f, "Void"),
-            Self::Array => write!(f, "IArray"),
             Self::Ref => write!(f, "Ref"),
             Self::Map(k, v) => write!(f, "Map[{}, {}]", *k, *v),
             Self::Seq(i) => write!(f, "Seq[{}]", *i),

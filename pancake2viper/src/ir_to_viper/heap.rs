@@ -4,15 +4,15 @@ use crate::ir;
 
 use crate::ir::shared::SharedOpType::{Load, Store};
 use crate::utils::{Shape, ToViperError, TryToShape, TryToViper, ViperEncodeCtx, ViperUtils};
+use crate::viper_prelude::heap::MemType;
 
 impl<'a> TryToViper<'a> for ir::Load {
     type Output = viper::Expr<'a>;
     fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError> {
         let ast = ctx.ast;
         let bytes_in_word = ast.int_lit(ctx.options.word_size as i64 / 8);
-        let iarray = ctx.iarray;
+        let heap = ctx.heap;
         let addr_exp = self.address.to_viper(ctx)?;
-        let word_addr = ast.div(addr_exp, bytes_in_word);
 
         if self.assert && ctx.options.assert_aligned_accesses {
             // assert addr % @biw == 0
@@ -23,14 +23,14 @@ impl<'a> TryToViper<'a> for ir::Load {
             ctx.stack.push(assertion);
         }
 
+        let heap_var = ctx.heap_var().1;
         Ok(if self.shape.is_simple() {
-            iarray.access(ctx.heap_var().1, word_addr)
+            heap.access(heap_var, addr_exp, MemType::Pancake)
         } else {
             let length = self.shape.len() as i64;
-
             let elems = (0..length)
                 .map(|offset| {
-                    iarray.access(ctx.heap_var().1, ast.add(word_addr, ast.int_lit(offset)))
+                    heap.access(heap_var, ast.add(addr_exp, ast.int_lit(offset)), MemType::Pancake)
                 })
                 .collect::<Vec<_>>();
             ast.explicit_seq(&elems)
@@ -78,7 +78,7 @@ impl<'a> TryToViper<'a> for ir::Store {
     fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError> {
         let ast = ctx.ast;
         let bytes_in_word = ast.int_lit(ctx.options.word_size as i64 / 8);
-        let iarray = ctx.iarray;
+        let heap = ctx.heap;
         let addr_expr = self.address.to_viper(ctx)?;
 
         // assert addr % @biw == 0
@@ -91,12 +91,12 @@ impl<'a> TryToViper<'a> for ir::Store {
             ast.comment("skipping alignment assertion")
         };
 
-        let word_addr = ast.div(addr_expr, bytes_in_word);
         let rhs_shape = self.value.to_shape(ctx.typectx_get_mut())?;
         let rhs = self.value.to_viper(ctx)?;
+        let heap_var = ctx.heap_var().1;
 
         let store = if rhs_shape.is_simple() {
-            ast.field_assign(iarray.access(ctx.heap_var().1, word_addr), rhs)
+            ast.field_assign(heap.access(heap_var, addr_expr, MemType::Pancake), rhs)
         } else {
             let length = rhs_shape.len() as i64;
 
@@ -104,8 +104,8 @@ impl<'a> TryToViper<'a> for ir::Store {
                 .map(|offset| {
                     let src = ast.seq_index(rhs, ast.int_lit(offset));
                     let dst = ctx
-                        .iarray
-                        .access(ctx.heap_var().1, ast.add(addr_expr, ast.int_lit(offset)));
+                        .heap
+                        .access(heap_var, ast.add(addr_expr, ast.int_lit(offset)), MemType::Pancake);
                     ast.local_var_assign(dst, src)
                 })
                 .collect::<Vec<_>>();
@@ -120,7 +120,7 @@ impl<'a> TryToViper<'a> for ir::StoreBits {
     type Output = viper::Stmt<'a>;
     fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError> {
         let ast = ctx.ast;
-        let iarray = ctx.iarray;
+        let heap = ctx.heap;
         let bytes_in_word = ast.int_lit(ctx.options.word_size as i64 / 8);
 
         let assertion = if ctx.options.assert_aligned_accesses && self.size.bits() != 8 {
@@ -152,7 +152,8 @@ impl<'a> TryToViper<'a> for ir::StoreBits {
             ast.int_to_backend_bv(BV64, self.value.to_viper(ctx)?),
         );
         let value = ast.bv_binop(BinOpBv::BvShl, BV64, value, shift_amount);
-        let old = ast.int_to_backend_bv(BV64, iarray.access(ctx.heap_var().1, word_address));
+        let heap_var = ctx.heap_var().1;
+        let old = ast.int_to_backend_bv(BV64, heap.access(heap_var, word_address, MemType::Pancake));
         let new = ast.bv_binop(
             BinOpBv::BitOr,
             BV64,
@@ -160,7 +161,7 @@ impl<'a> TryToViper<'a> for ir::StoreBits {
             ast.bv_binop(BinOpBv::BitAnd, BV64, value, mask),
         );
         let new = ast.backend_bv_to_int(BV64, new);
-        let field_ass = ast.field_assign(iarray.access(ctx.heap_var().1, word_address), new);
+        let field_ass = ast.field_assign(heap.access(heap_var, word_address, MemType::Pancake), new);
         Ok(ast.seqn(&[assertion, field_ass], &[]))
     }
 }

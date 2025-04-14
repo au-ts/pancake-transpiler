@@ -14,7 +14,6 @@ pub enum Type {
     Int,
     Bool,
     Struct(Vec<Shape>),
-    Array,
     Wildcard,
     Ref,
     Set(Box<Self>),
@@ -47,12 +46,13 @@ impl ExprTypeResolution for ir::Expr {
             UnfoldingIn(fold) => fold.expr.resolve_expr_type(is_annot, ctx),
             Ternary(tern) => tern.left.resolve_expr_type(is_annot, ctx),
             Quantified(quant) => {
-                quant.decls.resolve_type(is_annot, ctx)?;
-                Ok(Type::Bool)
-            }
+                        quant.decls.resolve_type(is_annot, ctx)?;
+                        Ok(Type::Bool)
+                    }
             Old(old) => old.expr.resolve_expr_type(is_annot, ctx),
             SeqLength(_) => Ok(Type::Int),
             ViperFieldAccess(acc) => ctx.get_field_type(&acc.field),
+            Contains(_) => Ok(Type::Bool),
         }
     }
 }
@@ -76,7 +76,6 @@ impl ExprTypeResolution for ir::ArrayAccess {
                     inner[0].to_type(is_annot)
                 }
             }),
-            Type::Array => Ok(Type::Int),
             Type::Seq(i) => Ok(*i),
             _ => Err(TranslationError::ShapeError(IRSimpleShapeFieldAccess(
                 *self.obj.clone(),
@@ -291,6 +290,9 @@ impl ir::Program {
         }
         for pred in &self.extern_predicates {
             ctx.set_type(format!("f_{}", pred), Type::Bool);
+        }
+        for (k, v) in &self.extern_consts {
+            ctx.set_type(k.clone(),v.clone());
         }
         loop {
             ignore_unknown(self.viper_functions.resolve_type(true, &mut ctx))?;

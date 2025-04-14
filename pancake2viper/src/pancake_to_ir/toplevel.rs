@@ -1,6 +1,6 @@
 use crate::{
     annotation::{
-        parse_extern_ffi, parse_extern_field, parse_extern_predicate, parse_function, parse_method,
+        parse_extern_ffi, parse_extern_field, parse_extern_const, parse_extern_predicate, parse_function, parse_method,
         parse_model_field, parse_model_predicate, parse_predicate, parse_shared,
     },
     ir::{self, Model},
@@ -126,6 +126,15 @@ impl TryFrom<pancake::Program> for ir::Program {
                     .map_err(|err| TranslationError::ParsingError(err.to_string()))
             })
             .collect::<Result<_, _>>()?;
+        let extern_consts = value
+            .extern_consts
+            .iter()
+            .map(|s| {
+                parse_extern_const(s)
+                    .map(|decl| (decl.name, decl.typ))
+                    .map_err(|err| TranslationError::ParsingError(err.to_string()))
+            })
+            .collect::<Result<_, _>>()?;
         let extern_methods = value
             .extern_methods
             .iter()
@@ -142,6 +151,7 @@ impl TryFrom<pancake::Program> for ir::Program {
             shared,
             extern_predicates,
             extern_fields,
+            extern_consts,
             extern_methods,
             model,
         })

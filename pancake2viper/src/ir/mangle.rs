@@ -41,6 +41,10 @@ impl Mangleable for ir::Expr {
                 op.left.mangle(mangler)?;
                 op.right.mangle(mangler)?
             }
+            Contains(c) => {
+                c.left.mangle(mangler)?;
+                c.right.mangle(mangler)?
+            }
             Shift(shift) => shift.value.mangle(mangler)?,
             MethodCall(call) => {
                 call.fname = Mangler::mangle_fn(&call.fname);

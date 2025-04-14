@@ -478,6 +478,7 @@ impl Program {
 
         let extern_predicates = Self::get_toplevel_annotations(&s, "extern predicate");
         let extern_fields = Self::get_toplevel_annotations(&s, "extern field");
+        let extern_consts = Self::get_toplevel_annotations(&s, "extern const");
         let extern_methods = Self::get_toplevel_annotations(&s, "ffi");
 
         let functions = get_sexprs(s, cake_path)?
@@ -499,6 +500,7 @@ impl Program {
             model_fields,
             extern_predicates,
             extern_fields,
+            extern_consts,
             extern_methods,
         })
     }
