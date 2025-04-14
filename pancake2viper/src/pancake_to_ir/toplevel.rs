@@ -1,6 +1,6 @@
 use crate::{
     annotation::{
-        parse_extern_ffi, parse_extern_field, parse_extern_predicate, parse_function, parse_method,
+        parse_extern_ffi, parse_extern_field, parse_extern_const, parse_extern_predicate, parse_function, parse_method,
         parse_model_field, parse_model_predicate, parse_predicate, parse_shared,
     },
     ir::{self, Model},
@@ -29,7 +29,7 @@ impl TryToIR for pancake::FnDec {
         let mut body = args.iter().fold(self.body.to_ir()?, |scope, arg| {
             ir::Stmt::Definition(ir::Definition {
                 lhs: arg.name.clone(),
-                rhs: ir::Expr::Var(arg.name.clone()),
+                rhs: ir::Expr::Var(ir::Var {name: arg.name.clone(), global: None}),
                 scope: Box::new(scope),
             })
         });
@@ -78,6 +78,18 @@ impl TryToIR for pancake::Shared {
     }
 }
 
+impl TryToIR for pancake::GlobalVar {
+    type Output = ir::GlobalVar;
+
+    fn to_ir(self) -> Result<Self::Output, TranslationError> {
+        Ok(Self::Output {
+            name: self.name,
+            typ: self.shape.to_type(false),
+            value: self.value.to_ir()?,
+        })
+    }
+}
+
 impl TryFrom<pancake::Program> for ir::Program {
     type Error = TranslationError;
 
@@ -85,6 +97,7 @@ impl TryFrom<pancake::Program> for ir::Program {
         let viper_functions = value.viper_functions.to_ir()?;
         let predicates = value.predicates.to_ir()?;
         let functions = value.functions.to_ir()?;
+        let global_vars = value.global_vars.to_ir()?;
         let methods = value.methods.to_ir()?;
         let shared = value.shared.to_ir()?;
 
@@ -126,6 +139,15 @@ impl TryFrom<pancake::Program> for ir::Program {
                     .map_err(|err| TranslationError::ParsingError(err.to_string()))
             })
             .collect::<Result<_, _>>()?;
+        let extern_consts = value
+            .extern_consts
+            .iter()
+            .map(|s| {
+                parse_extern_const(s)
+                    .map(|decl| (decl.name, decl.typ))
+                    .map_err(|err| TranslationError::ParsingError(err.to_string()))
+            })
+            .collect::<Result<_, _>>()?;
         let extern_methods = value
             .extern_methods
             .iter()
@@ -136,12 +158,14 @@ impl TryFrom<pancake::Program> for ir::Program {
 
         Ok(ir::Program {
             functions,
+            global_vars,
             predicates,
             viper_functions,
             methods,
             shared,
             extern_predicates,
             extern_fields,
+            extern_consts,
             extern_methods,
             model,
         })

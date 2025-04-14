@@ -1,6 +1,8 @@
-fun main(2 x) {
+fun test(2 x) {
     /@ requires x.0 == 42 @/
     /@ ensures retval == 42 @/
+    var {1,1} x = < 42, 0 >;
+    /@ assert x.0 == 42 @/
     do_stuff(x);
     return x.0;
 }

@@ -5,7 +5,7 @@
 }
 @/
 
-fun main(4 queue) {
+fun test(4 queue) {
     /@ requires net_queue(queue) @/
     /@ ensures net_queue(queue) @/
 

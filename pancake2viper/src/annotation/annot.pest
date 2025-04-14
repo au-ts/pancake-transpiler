@@ -6,7 +6,7 @@ integer = @{ ASCII_DIGIT ~ ("_" | ASCII_DIGIT)* }
 hex = @{ ASCII_HEX_DIGIT ~ ("_" | ASCII_HEX_DIGIT)* }
 ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_" )* }
 
-type = _{ int_t | bool_t | iarray_t | ref_t | shape_t | set_t | seq_t | map_t }
+type = _{ int_t | bool_t | ref_t | iarray_t | shape_t | set_t | seq_t | map_t }
     int_t = { "Int" }
     bool_t = { "Bool" }
     iarray_t = { "IArray" }
@@ -51,7 +51,8 @@ bin_op = _{ add | sub | mul | div | modulo | imp | iff | viper_eq | viper_neq | 
     bit_xor = { "^" }
 
 expr = !{ prefix? ~ primary ~ postfix* ~ (infix ~ prefix? ~ primary ~ postfix*)* }
-    infix = _{ bin_op }
+    infix = _{ bin_op | contains }
+        contains = { "in" }
     prefix = _{ neg | minus }
         neg = { "!" }
         minus = { "-" }
@@ -87,7 +88,8 @@ expr = !{ prefix? ~ primary ~ postfix* ~ (infix ~ prefix? ~ primary ~ postfix*)*
                 perm_var = { ident }
 
         old = {"old(" ~ expr ~ ")" }
-        seq_length = { "|" ~ expr ~ "|" }
+        seq_length = { "|" ~ seq_expr ~ "|" }
+        seq_expr = @{ (!("|") ~ ANY)+ }
         f_call = {ident ~ "(" ~ (expr ~ ("," ~ expr)* | "") ~ ")" }
         unfolding = { "unfolding" ~ f_call ~ "in" ~ expr }
         biw = { "@biw" }
@@ -128,6 +130,7 @@ model_field = { "/@" ~ "model" ~ "field" ~ ident ~ "@/" }
 
 ext_predicate = { "/@" ~ "extern" ~ "predicate" ~ ident ~ "@/" }
 ext_field = { "/@" ~ "extern" ~ "field" ~ decl ~ "@/" }
+ext_const = { "/@" ~ "extern" ~ "const" ~ decl ~ "@/" }
 ffi_method = { "/@" ~ "ffi" ~ ident ~ "@/" }
 
 // Shared memory annotations

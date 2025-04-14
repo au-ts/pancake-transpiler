@@ -33,6 +33,7 @@ pub struct Definition {
 pub struct Assign {
     pub lhs: String,
     pub rhs: Expr,
+    pub global: bool,
 }
 
 // Stores

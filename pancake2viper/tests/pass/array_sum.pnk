@@ -17,7 +17,7 @@ fun array_sum(1 arr, 1 len) {
     /@ ensures forall i: Int :: arr / 8 <= i && i < arr / 8 + len ==> acc(heap[i], read) @/
     /@ requires forall i: Int :: arr / 8 <= i && i < arr / 8 + len ==> 0 <= heap[i] && heap[i] < 256 @/
 
-    /@ ensures sum(arr / 8, len) == retval */
+    /@ ensures sum(arr / 8, len) == retval @/
 
     var i = 0;
     var accu = 0;

@@ -1,19 +1,22 @@
 # Pancake Verifier
 
-The Pancake Verifier is a verification tool for the Pancake systems programming language, built on the [CakeML](https://cakeml.orgca) verified compiler.
+The Pancake Verifier is a verification tool for the Pancake systems programming language, built on the [CakeML](https://cakeml.org) verified compiler.
 It transpiles Pancake code into the Viper intermediate language and uses the Viper toolchain for formal verification.
 
 ## Getting the verifier
 
 The verifier is available as:
  - A standalone CLI program called `pancake2viper`, downloadable [here](https://github.com/alegnani/pancake-verifier/releases/)
+ - An interactive online website [Pancake Playground](https://trustworthy.systems/pancake-playground/)
+<!-- 
  - A VS Code extension, available [here](https://marketplace.visualstudio.com/items?itemName=alegnani.pancake-ide).
+-->
 
 ## Dependencies
 
 - JDK11 or newer
-- Viper toolchain (available as part of the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=viper-admin.viper) or as a standalone [release](https://github.com/viperproject/viper-ide/releases/tag/v.24.08-release).
-- CakeML compiler rev. [d8b47adc](https://cakeml.org/regression.cgi/job/2697) 
+- Viper toolchain v4.3.1 (available as part of the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=viper-admin.viper) with "Install Specific Version..." or as a standalone [release](https://github.com/viperproject/viper-ide/releases/tag/v4.3.1).
+- CakeML compiler rev. [Job 2960](https://cakeml.org/regression.cgi/job/2960) 
 - z3 (included in the Viper toolchain) 
 
 ### Configuration
@@ -22,37 +25,45 @@ The verifier is available as:
  - The path to `viperserver.jar` can be set via the `--viper <VIPER_PATH>` flag or by setting `$VIPER_HOME`.
  - The path to the `z3` executable can be set via the `--z3 <Z3_PATH>` flag or by setting `$Z3_EXE`.
 
-A compatible z3 binary is included at `ViperTools/z3/bin/z3` when using the Viper VS Code extension, which is typically installed at `~/.config/Code/User/globalStorage/viper-admin.viper/Stable/ViperTools/`.
+A compatible z3 binary is included at `ViperTools/z3/bin/z3` when using the Viper VS Code extension, which is typically installed at `~/.config/Code/User/globalStorage/viper-admin.viper/Stable/ViperTools/` (Linux) or `~/.vscode/extensions/viper-admin.viper/dependencies/ViperTools` (Mac).
 
 ## How to run
 
+<!-- 
 ### Standalone
+-->
 
 To transpile a Pancake file to Viper: 
 ```bash
 pancake2viper transpile foobar.🥞 foobar.vpr
 ```
 
+<!-- 
 To verify a Pancake file: 
 ```bash
 pancake2viper verify foobar.🥞
 ```
+-->
 
 Also supports input via stdin:
 ```bash
 cat foo.🥞 bar.🥞 | pancake2viper verify -
 ```
 
+<!-- 
 To verify a Pancake program running on a 32-bit architecture and a static heap of 1 KiB:
 ```bash
 pancake2viper verify --word-size 32 --heap-size 1024 foobar.🥞
 ```
+-->
 
+<!-- 
 ### VS Code Extension
 
 Currently the extension is a bit more limited in functionality being stuck on an old version of `pancake2viper`.
 On opening or modifying a Pancake file(.🥞 or .pnk) a Viper file is generated with the same name. This file is kept in sync with the Pancake source.
 From the Command Palette (Ctrl+Shift+P) the current file can be verified using the `Pancake Verifier: Verify file` command.
+-->
 
 ## Pancake annotations
 

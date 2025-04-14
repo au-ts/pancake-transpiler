@@ -185,10 +185,18 @@ pub struct ClapCliOptions {
     #[arg(
         global = true,
         long,
-        default_value_t = 16384,
-        help = "Maximum valid offset from @base in bytes, aka. the maximum size of Pancake's static heap"
+        default_value_t = 0x20000000,
+        help = "Lowest address of the Pancake heap"
     )]
-    pub heap_size: u64,
+    pub heap_base: u64,
+
+    #[arg(
+        global = true,
+        long,
+        default_value_t = 0x40000000,
+        help = "Highest address of the Pancake heap"
+    )]
+    pub heap_top: u64,
 
     #[arg(
         global = true,
@@ -274,7 +282,9 @@ pub struct CliOptions {
     pub disable_overflow_checks: bool,
     pub bounded_arithmetic: bool,
     pub disable_assert_alignment: bool,
-    pub heap_size: u64,
+    // todo: check that heap_base and heap_top are page-aligned
+    pub heap_base: u64,
+    pub heap_top: u64,
     pub cake_path: String,
     pub viper_path: String,
     pub z3_exe: String,
@@ -292,13 +302,16 @@ pub struct CliOptions {
 
 impl From<ClapCliOptions> for CliOptions {
     fn from(value: ClapCliOptions) -> Self {
+        assert!(value.heap_base % 1024 == 0, "Heap Base has to be page aligned by 1024.");
+        assert!(value.heap_top % 1024 == 0, "Heap Top has to be page aligned by 1024.");
         Self {
             cmd: value.cmd.into(),
             word_size: value.word_size,
             disable_overflow_checks: value.disable_overflow_check,
             bounded_arithmetic: value.bounded_arithmetic,
             disable_assert_alignment: value.disable_assert_alignment,
-            heap_size: value.heap_size,
+            heap_base: value.heap_base,
+            heap_top: value.heap_top,
             cake_path: value.cake_path,
             viper_path: value.viper_path,
             z3_exe: value.z3_exe,
@@ -324,7 +337,8 @@ impl Default for CliOptions {
             disable_overflow_checks: false,
             bounded_arithmetic: false,
             disable_assert_alignment: false,
-            heap_size: 16384,
+            heap_base: 0x20000000,
+            heap_top: 0x40000000,
             cake_path: get_cake_path(),
             viper_path: get_viper_path(),
             z3_exe: get_z3_path(),
@@ -344,10 +358,13 @@ impl Default for CliOptions {
 
 impl From<CliOptions> for EncodeOptions {
     fn from(value: CliOptions) -> Self {
+        assert!(value.heap_base % 1024 == 0, "Heap Base has to be page aligned.");
+        assert!(value.heap_top % 1024 == 0, "Heap Top has to be page aligned.");
         Self {
             assert_aligned_accesses: !value.disable_assert_alignment,
             word_size: value.word_size.into(),
-            heap_size: value.heap_size,
+            heap_base: value.heap_base,
+            heap_top: value.heap_top,
             check_overflows: !value.disable_overflow_checks,
             bounded_arithmetic: value.bounded_arithmetic,
             debug_comments: value.debug_comments,

@@ -249,6 +249,11 @@ impl ExprSubstitution for Expr {
                 let b = op.right.substitute(old, new);
                 a || b
             }
+            Self::Contains(c) => {
+                let a = c.left.substitute(old, new);
+                let b = c.right.substitute(old, new);
+                a || b
+            }
             Self::UnOp(op) => op.right.substitute(old, new),
             Self::Field(field) => field.obj.substitute(old, new),
             Self::Load(load) => load.address.substitute(old, new),
@@ -293,7 +298,10 @@ impl ExprSubstitution for Vec<Expr> {
 
 impl From<Arg> for Expr {
     fn from(value: Arg) -> Self {
-        Expr::Var(value.name)
+        Expr::Var(ir::Var {
+            name: value.name.clone(), 
+            global: None,
+        })
     }
 }
 
@@ -350,9 +358,9 @@ impl Model {
     pub fn get_default_args<'a>(
         &self,
         ast: AstFactory<'a>,
-        heap_var: (viper::LocalVarDecl<'a>, viper::Expr<'a>),
+        heap_vars: Vec<(viper::LocalVarDecl<'a>, viper::Expr<'a>)>,
     ) -> (Vec<viper::LocalVarDecl<'a>>, Vec<viper::Expr<'a>>) {
-        std::iter::once(heap_var)
+        heap_vars.into_iter()
             .chain(
                 self.fields
                     .iter()

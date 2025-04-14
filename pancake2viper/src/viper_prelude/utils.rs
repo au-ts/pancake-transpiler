@@ -45,15 +45,15 @@ pub fn bound_function<'a>(
 #[derive(Clone)]
 pub struct Utils<'a> {
     ast: AstFactory<'a>,
-    iarray_typ: viper::Type<'a>,
+    heap_typ: viper::Type<'a>,
     model: Model,
 }
 
 impl<'a> Utils<'a> {
-    pub fn new(ast: AstFactory<'a>, iarray_typ: viper::Type<'a>, model: Model) -> Self {
+    pub fn new(ast: AstFactory<'a>, heap_typ: viper::Type<'a>, model: Model) -> Self {
         Self {
             ast,
-            iarray_typ,
+            heap_typ,
             model,
         }
     }
@@ -67,8 +67,27 @@ impl<'a> Utils<'a> {
         )
     }
 
-    pub fn heap(&self) -> (LocalVarDecl<'a>, Expr<'a>) {
-        self.ast.new_var("heap", self.iarray_typ)
+    pub fn heap_var(&self) -> (LocalVarDecl<'a>, Expr<'a>) {
+        self.ast.new_var("heap", self.heap_typ)
+    }
+
+    pub fn local_mem(&self) -> (LocalVarDecl<'_>, Expr<'_>) {
+        self.ast.new_var("local_mem", self.ast.int_type())
+    }
+
+    pub fn shared_mem(&self) -> (LocalVarDecl<'_>, Expr<'_>) {
+        self.ast.new_var("shared_mem", self.ast.int_type())
+    }
+
+    pub fn gv_ref(&self) -> (LocalVarDecl<'a>, Expr<'a>) {
+        self.ast.new_var("gv", self.ast.ref_type())
+    }
+
+    pub fn heap_vars(&self) -> Vec<(LocalVarDecl<'a>, Expr<'a>)> {
+        let heap_vars = vec![
+            self.heap_var(), 
+            self.gv_ref()];
+        heap_vars
     }
 
     pub fn get_model(&self) -> &Model {

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::{
     ir::{self, Expr},
     utils::{
@@ -14,7 +12,7 @@ pub enum Type {
     Int,
     Bool,
     Struct(Vec<Shape>),
-    Array,
+    Array,    
     Wildcard,
     Ref,
     Set(Box<Self>),
@@ -37,7 +35,7 @@ impl ExprTypeResolution for ir::Expr {
             BinOp(op) => op.resolve_expr_type(is_annot, ctx),
             UnOp(op) => op.resolve_expr_type(is_annot, ctx),
             AccessPredicate(_) | AccessSlice(_) => Ok(Type::Bool),
-            Var(name) => ctx.get_type_no_mangle(name),
+            Var(v) => ctx.get_type_no_mangle(&v.name),
             Label(_) => unreachable!(),
             Struct(struc) => Ok(struc.to_shape(ctx)?.to_type(is_annot)),
             Field(field) => Ok(field.to_shape(ctx)?.to_type(is_annot)),
@@ -53,6 +51,7 @@ impl ExprTypeResolution for ir::Expr {
             Old(old) => old.expr.resolve_expr_type(is_annot, ctx),
             SeqLength(_) => Ok(Type::Int),
             ViperFieldAccess(acc) => ctx.get_field_type(&acc.field),
+            Contains(_) => Ok(Type::Bool),
         }
     }
 }
@@ -76,8 +75,8 @@ impl ExprTypeResolution for ir::ArrayAccess {
                     inner[0].to_type(is_annot)
                 }
             }),
-            Type::Array => Ok(Type::Int),
             Type::Seq(i) => Ok(*i),
+            Type::Array => Ok(Type::Int),
             _ => Err(TranslationError::ShapeError(IRSimpleShapeFieldAccess(
                 *self.obj.clone(),
             ))),
@@ -275,7 +274,7 @@ impl TypeResolution for ir::Model {
 
 impl ir::Program {
     pub fn resolve_types(&self) -> Result<TypeContext, TranslationError> {
-        let mut ctx = TypeContext::new(Rc::new(self.extern_fields.clone()));
+        let mut ctx = TypeContext::new(self.extern_fields.clone());
         let mut prev_size = ctx.size();
 
         for ffi in &self.extern_methods {
@@ -291,6 +290,12 @@ impl ir::Program {
         }
         for pred in &self.extern_predicates {
             ctx.set_type(format!("f_{}", pred), Type::Bool);
+        }
+        for (k, v) in &self.extern_consts {
+            ctx.set_type(k.clone(),v.clone());
+        }
+        for g in &self.global_vars {
+            ctx.insert_field(g.name.clone(), g.typ.clone());
         }
         loop {
             ignore_unknown(self.viper_functions.resolve_type(true, &mut ctx))?;

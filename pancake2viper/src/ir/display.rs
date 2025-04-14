@@ -51,7 +51,7 @@ impl Display for Expr {
         match self {
             Self::Const(c) => write!(f, "{}", c),
             Self::BoolLit(b) => write!(f, "{}", b),
-            Self::Var(v) => write!(f, "{}", v),
+            Self::Var(v) => write!(f, "{}", v.name),
             Self::Label(l) => write!(f, "{}", l),
             Self::BaseAddr => write!(f, "@base"),
             Self::BytesInWord => write!(f, "@biw"),
@@ -87,6 +87,7 @@ impl Display for Expr {
             Self::Ternary(t) => write!(f, "(({}) ? {} : {})", t.cond, t.left, t.right),
             Self::ViperFieldAccess(acc) => write!(f, "{}.{}", acc.obj, acc.field),
             Self::SeqLength(seq) => write!(f, "|{}|", seq.expr),
+            Self::Contains(c) => write!(f, "{} in {}", c.left, c.right),
         }
     }
 }

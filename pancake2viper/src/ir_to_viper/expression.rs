@@ -160,6 +160,16 @@ impl<'a> TryToViper<'a> for ir::BinOp {
     }
 }
 
+impl<'a> TryToViper<'a> for ir::Contains {
+    type Output = viper::Expr<'a>;
+    fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError> {
+        let ast = ctx.ast;
+        let elem = self.left.to_viper(ctx)?;
+        let seq = self.right.to_viper(ctx)?;
+        Ok(ast.seq_contains(elem, seq))
+    }
+}
+
 impl<'a> TryToViper<'a> for ir::Shift {
     type Output = viper::Expr<'a>;
     fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError> {
@@ -252,7 +262,7 @@ impl<'a> TryToViper<'a> for ir::FunctionCall {
         Ok(match self.fname.as_str() {
             "f_alen" => {
                 let arr = args[0];
-                ctx.iarray.len_f(arr)
+                ctx.heap.len_f(arr)
             }
             "f_old" => ast.old(args[0]),
             pred if ctx.is_predicate(pred) => {
@@ -316,14 +326,14 @@ impl<'a> TryToViper<'a> for ir::ArrayAccess {
     type Output = viper::Expr<'a>;
     fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError> {
         let idx = self.idx.to_viper(ctx)?;
-        let typ = self
-            .obj
-            .resolve_expr_type(ctx.get_mode().is_annot(), ctx.typectx_get_mut())?;
+        let typ = self.obj.resolve_expr_type(ctx.get_mode().is_annot(), ctx.typectx_get_mut())?;
         let obj = self.obj.to_viper(ctx)?;
-        Ok(match typ {
-            Type::Seq(_) => ctx.ast.seq_index(obj, idx),
-            _ => ctx.iarray.access(obj, idx),
-        })
+        let heap = ctx.heap;
+        match typ {
+            Type::Seq(_) => Ok(ctx.ast.seq_index(obj, idx)),
+            _ => Ok(heap.access(obj, idx, crate::viper_prelude::heap::MemType::Local))
+            // _ => unreachable!("Expected memory cell type: pan and shared, got {:?}", self.mem_type.as_str())
+        }
     }
 }
 
@@ -378,19 +388,12 @@ impl<'a> TryToViper<'a> for ir::AccessSlice {
     type Output = viper::Expr<'a>;
 
     fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError> {
-        let ast = ctx.ast;
         let field = self.field.to_viper(ctx)?;
         let lower = self.lower.to_viper(ctx)?;
         let upper = self.upper.to_viper(ctx)?;
-        let length = ast.add(
-            ast.sub(upper, lower),
-            ast.int_lit(match self.typ {
-                ir::SliceType::Exclusive => 0,
-                ir::SliceType::Inclusive => 1,
-            }),
-        );
+        let typ = self.typ;
         let perm = self.perm.to_viper(ctx);
-        Ok(ctx.iarray.array_acc_expr(field, lower, length, perm))
+        Ok(ctx.heap.heap_acc_expr(field, lower, upper, typ, perm, ctx.options.word_size as i64))
     }
 }
 
@@ -415,6 +418,7 @@ impl<'a> TryToViper<'a> for ir::Expr {
         match self {
             UnOp(op) => op.to_viper(ctx),
             BinOp(op) => op.to_viper(ctx),
+            Contains(c) => c.to_viper(ctx),
             FunctionCall(call) => call.to_viper(ctx),
             MethodCall(call) => call.to_viper(ctx),
             Shift(shift) => shift.to_viper(ctx),
@@ -433,17 +437,21 @@ impl<'a> TryToViper<'a> for ir::Expr {
                 Const(c) => ast.int_lit(c),
                 BoolLit(b) if b => ast.true_lit(),
                 BoolLit(b) if !b => ast.false_lit(),
-                Var(name) if name == "result" => ast.result_with_pos(
+                Var(v) if v.name == "result" => ast.result_with_pos(
                     ctx.get_type("result")?.to_viper_type(ctx),
                     ast.no_position(),
                 ),
-                Var(name) => ast.local_var(&name, ctx.get_type(&name)?.to_viper_type(ctx)),
+                Var(v) if v.global.unwrap_or(false) => ctx.gv_access(&v.name),
+                Var(v) => ast.local_var(&v.name, ctx.get_type(&v.name)?.to_viper_type(ctx)),
                 Label(_) => todo!(), // XXX: not sure if we need this
                 BaseAddr => ast.zero(),
                 BytesInWord => ast.int_lit(ctx.options.word_size as i64 / 8),
                 Old(old) => ast.old(old.expr.to_viper(ctx)?),
                 SeqLength(s) => ast.seq_length(s.expr.to_viper(ctx)?),
-                _ => unreachable!(),
+                _ => {
+                    println!("{:?}", x); 
+                    unreachable!()
+                },
             }),
         }
     }

@@ -6,7 +6,7 @@ use super::utils::Utils;
 
 pub fn create_shared_mem_methods<'a>(ast: AstFactory<'a>, utils: &Utils<'a>) -> Vec<Method<'a>> {
     let address = ast.new_var("address", ast.int_type());
-    let heap = utils.heap();
+    let heap = utils.heap_vars();
     let value = ast.new_var("value", ast.int_type());
     let mut store_args = utils.get_model().get_default_args(ast, heap).0;
     store_args.push(address.0);

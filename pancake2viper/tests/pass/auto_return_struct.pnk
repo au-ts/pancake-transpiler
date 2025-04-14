@@ -1,4 +1,4 @@
-fun dostuff() {
+fun 2 dostuff() {
     /@ ensures retval == < 1, 2 > @/
 
     return < 1, 2 >;

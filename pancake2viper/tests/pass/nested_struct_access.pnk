@@ -1,6 +1,6 @@
-fun main() {
-    var queue = <1,1,1,1>;
-    var ret = < queue, <0,1> >;
+fun {{1,1,1,1}, {1,1}} test() {
+    var {1,1,1,1} queue = <1,1,1,1>;
+    var {{1,1,1,1}, {1,1}} ret = < queue, <0,1> >;
     /@ assert ret.0.3 == ret.1.1 @/
     return ret;
 }

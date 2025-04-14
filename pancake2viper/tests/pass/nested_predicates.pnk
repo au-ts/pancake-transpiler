@@ -1,5 +1,6 @@
 /@ predicate hardware_ring_rx()
 {
+    alen(heap) >= 260 &&
     acc(heap[0]) && acc(heap[1]) &&
     bounded8(heap[0]) && bounded8(heap[1])
 }

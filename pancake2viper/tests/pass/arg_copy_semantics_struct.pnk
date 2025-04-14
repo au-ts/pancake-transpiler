@@ -1,5 +1,5 @@
 fun main() {
-    var test = <1,2>;
+    var {1,1} test = <1,2>;
     var 1 res = tuple_equal(test);
     return 0;
 }

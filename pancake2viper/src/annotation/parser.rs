@@ -29,6 +29,7 @@ lazy_static::lazy_static! {
             .op(Op::postfix(Rule::shift))
             .op(Op::infix(Rule::add, Left) | Op::infix(Rule::sub, Left))
             .op(Op::infix(Rule::mul, Left) | Op::infix(Rule::div, Left) | Op::infix(Rule::modulo, Left))
+            .op(Op::infix(Rule::contains, Left))
             .op(Op::prefix(Rule::neg) | Op::prefix(Rule::minus))
             .op(Op::postfix(Rule::field_acc))
             .op(Op::postfix(Rule::viper_field_acc))
@@ -151,6 +152,11 @@ pub fn parse_extern_field(s: &str) -> ParseResult<Decl> {
         .map(|mut pairs| Decl::from_pest(pairs.next().unwrap().into_inner().next().unwrap()))?)
 }
 
+pub fn parse_extern_const(s: &str) -> ParseResult<Decl> {
+    Ok(AnnotParser::parse(Rule::ext_const, s)
+        .map(|mut pairs| Decl::from_pest(pairs.next().unwrap().into_inner().next().unwrap()))?)
+}
+
 pub fn parse_extern_ffi(s: &str) -> ParseResult<String> {
     Ok(AnnotParser::parse(Rule::ffi_method, s).map(|mut pairs| {
         pairs
@@ -269,7 +275,7 @@ fn parse_expr(pairs: Pairs<Rule>) -> Expr {
             Rule::int_lit => Expr::Const(i64::from_pest(primary)),
             Rule::quantified => Expr::Quantified(Quantified::from_pest(primary)),
             Rule::expr => parse_expr(primary.into_inner()),
-            Rule::ident => Expr::Var(primary.as_str().to_owned()),
+            Rule::ident => Expr::Var(Var {name: primary.as_str().to_owned(), global: None}),
             Rule::old => Expr::Old(Old {
                 expr: Box::new(parse_expr(primary.into_inner())),
             }),
@@ -281,10 +287,7 @@ fn parse_expr(pairs: Pairs<Rule>) -> Expr {
             Rule::biw => Expr::BytesInWord,
             Rule::true_lit => Expr::BoolLit(true),
             Rule::false_lit => Expr::BoolLit(false),
-            Rule::seq_length => Expr::SeqLength(
-                SeqLength {
-                    expr: Box::new(parse_expr(primary.into_inner())),
-            }),
+            Rule::seq_length => Expr::SeqLength(SeqLength::from_pest(primary)),
             _ => unreachable!(),
         })
         .map_prefix(|op, rhs| {
@@ -294,11 +297,17 @@ fn parse_expr(pairs: Pairs<Rule>) -> Expr {
             })
         })
         .map_infix(|lhs, op, rhs| {
-            Expr::BinOp(BinOp {
-                optype: BinOpType::from_pest(op),
-                left: Box::new(lhs),
-                right: Box::new(rhs),
-            })
+            match op.as_rule() {
+                Rule::contains => { Expr::Contains( Contains {
+                    left: Box::new(lhs),
+                    right: Box::new(rhs),
+                })},
+                _ => { Expr::BinOp(BinOp {
+                    optype: BinOpType::from_pest(op),
+                    left: Box::new(lhs),
+                    right: Box::new(rhs),
+                })}
+            }
         })
         .map_postfix(|lhs, op| match op.as_rule() {
             Rule::field_acc => Expr::Field(Field {
@@ -309,10 +318,16 @@ fn parse_expr(pairs: Pairs<Rule>) -> Expr {
                 obj: Box::new(lhs),
                 field: op.as_str().trim_start_matches('.').to_string(),
             }),
-            Rule::arr_acc => Expr::ArrayAccess(ArrayAccess {
+            Rule::arr_acc => {
+                // todo: infer mem_type from top-level annotations
+                let mem_type = "local_mem".to_string();
+                // let mem_type = op.as_str().split('.').last().unwrap().to_string();
+                let idx = Box::new(parse_expr(op.into_inner()));
+                Expr::ArrayAccess(ArrayAccess {
                 obj: Box::new(lhs),
-                idx: Box::new(parse_expr(op.into_inner())),
-            }),
+                idx: idx,
+                mem_type: mem_type,
+            })},
             Rule::ternary => {
                 let mut pairs = op.into_inner();
                 Expr::Ternary(Ternary {
@@ -578,6 +593,7 @@ impl FromPestPair for AccessSlice {
         let lower = Box::new(parse_expr(Pairs::single(inner.next().unwrap())));
         let typ = SliceType::from_pest(inner.next().unwrap());
         let upper = Box::new(parse_expr(Pairs::single(inner.next().unwrap())));
+        let mem = "local_mem";
         let perm = inner
             .next()
             .map(Permission::from_pest)
@@ -588,9 +604,23 @@ impl FromPestPair for AccessSlice {
             lower,
             upper,
             perm,
+            mem: mem.to_string(),
         }
     }
 }
+
+impl FromPestPair for SeqLength {
+    fn from_pest(pair: Pair<'_, Rule>) -> Self {
+        let mut pairs = pair.into_inner();
+        let seq_str = pairs.next().unwrap().as_str();
+        let expr_pairs = AnnotParser::parse(Rule::expr, seq_str)
+            .expect("Failed to parse seq_length expr")
+            .next()
+            .unwrap();
+        let expr = parse_expr(Pairs::single(expr_pairs));
+        Self { expr: Box::new(expr) }
+    }
+} 
 
 impl FromPestPair for FunctionCall {
     fn from_pest(pair: Pair<'_, Rule>) -> Self {

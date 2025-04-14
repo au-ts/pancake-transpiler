@@ -7,7 +7,7 @@ use viper::{AstFactory, Declaration, LocalVarDecl};
 
 use crate::{
     ir::{self, shared::SharedContext, types::Type, AnnotationType, FnDec, Model},
-    viper_prelude::{utils::Utils, IArrayHelper},
+    viper_prelude::{utils::Utils, HeapHelper},
 };
 
 use super::{mangler::Mangler, TranslationError, RESERVED};
@@ -40,10 +40,11 @@ impl From<AnnotationType> for TranslationMode {
     }
 }
 
+// todo: might not need this type map anymore if all variables have type upon declaration
 #[derive(Debug, Clone)]
 pub struct TypeContext {
     type_map: HashMap<String, Type>,
-    fields: Rc<HashMap<String, Type>>,
+    fields: HashMap<String, Type>,
 }
 
 type Exprs = Vec<ir::Expr>;
@@ -78,7 +79,7 @@ impl MethodContext {
 }
 
 impl TypeContext {
-    pub fn new(fields: Rc<HashMap<String, Type>>) -> Self {
+    pub fn new(fields: HashMap<String, Type>) -> Self {
         let type_map = RESERVED
             .iter()
             .map(|(&s, t)| (s.to_owned(), t.clone()))
@@ -94,7 +95,11 @@ impl TypeContext {
         self.type_map
             .get(var)
             .cloned()
-            .ok_or(TranslationError::UnknownShape(var.to_owned()))
+            .ok_or_else(|| {
+                // println!("Error: variable '{}' not found", var);
+                // println!("Available types in type_map: {:?}", self.type_map);
+                TranslationError::UnknownShape(var.to_owned())
+            })
     }
 
     pub fn get_function_type(&self, fname: &str) -> Result<Type, TranslationError> {
@@ -103,6 +108,11 @@ impl TypeContext {
             .or_else(|| self.type_map.get(fname))
             .ok_or(TranslationError::UnknownReturnType(fname.to_owned()))
             .cloned()
+    }
+
+    pub fn insert_field(&mut self, var: String, typ: Type) {
+        self.fields.insert(var.clone(), typ.clone());
+        self.type_map.insert(var, typ);
     }
 
     pub fn set_type(&mut self, var: String, typ: Type) {
@@ -117,13 +127,18 @@ impl TypeContext {
         self.fields
             .get(field)
             .map(|t| t.to_owned())
-            .ok_or(TranslationError::UnknownField(field.to_owned()))
+            .ok_or_else( || {
+                // println!("Error: Unknown Field '{}'", field);
+                // println!("Available types in field_map: {:?}", self.fields);
+                // println!("Available types in type_map: {:?}", self.type_map);
+                TranslationError::UnknownField(field.to_owned())
+            })
     }
 }
 
 impl Default for TypeContext {
     fn default() -> Self {
-        Self::new(Rc::new(HashMap::new()))
+        Self::new(HashMap::new())
     }
 }
 
@@ -135,7 +150,7 @@ pub struct ViperEncodeCtx<'a> {
     pub declarations: Vec<viper::LocalVarDecl<'a>>,
     while_counter: u64,
     types: TypeContext,
-    pub iarray: IArrayHelper<'a>,
+    pub heap: HeapHelper<'a>,
     pub utils: Utils<'a>,
     pub options: EncodeOptions,
     pub consume_stack: bool,
@@ -148,13 +163,15 @@ pub struct ViperEncodeCtx<'a> {
     pub model: Model,
     pub extern_methods: HashSet<String>,
     pub shared_override: Option<String>,
+    pub extern_consts: HashMap<String, Type>,
 }
 
 #[derive(Clone, Copy)]
 pub struct EncodeOptions {
     pub assert_aligned_accesses: bool,
     pub word_size: u64,
-    pub heap_size: u64,
+    pub heap_base: u64,
+    pub heap_top: u64,
     pub check_overflows: bool,
     pub bounded_arithmetic: bool,
     pub debug_comments: bool,
@@ -168,7 +185,8 @@ impl Default for EncodeOptions {
         Self {
             assert_aligned_accesses: true,
             word_size: 64,
-            heap_size: 16 * 1024,
+            heap_base: 0x20000000,
+            heap_top: 0x40000000,
             check_overflows: true,
             bounded_arithmetic: false,
             debug_comments: false,
@@ -189,8 +207,12 @@ impl<'a> ViperEncodeCtx<'a> {
         annot: Rc<MethodContext>,
         model: Model,
         extern_methods: HashSet<String>,
+        extern_consts: HashMap<String, Type>,
     ) -> Self {
-        let iarray = IArrayHelper::new(ast);
+        let heap = HeapHelper::new(ast);
+        let fields_set: HashSet<String> = model.fields.clone().into_iter().collect();
+        let consts_set: HashSet<String> = extern_consts.keys().cloned().collect();
+        let mangler_set: HashSet<String> = fields_set.union(&consts_set).cloned().collect::<HashSet<String>>();
         Self {
             mode: TranslationMode::Normal,
             ast,
@@ -199,18 +221,19 @@ impl<'a> ViperEncodeCtx<'a> {
             declarations: vec![],
             types,
             while_counter: 0,
-            iarray,
-            utils: Utils::new(ast, iarray.get_type(), model.clone()),
+            heap,
+            utils: Utils::new(ast, heap.get_type(), model.clone()),
             options,
             consume_stack: true,
             invariants: vec![],
             predicates,
-            mangler: Mangler::new(model.fields.clone().into_iter().collect()),
+            mangler: Mangler::new(mangler_set),
             shared,
             method: annot,
             model,
             extern_methods,
             shared_override: None,
+            extern_consts,
         }
     }
 
@@ -223,7 +246,7 @@ impl<'a> ViperEncodeCtx<'a> {
             declarations: vec![],
             types: self.types.child(),
             while_counter: self.while_counter,
-            iarray: self.iarray,
+            heap: self.heap,
             utils: self.utils.clone(),
             options: self.options,
             consume_stack: self.consume_stack,
@@ -235,6 +258,7 @@ impl<'a> ViperEncodeCtx<'a> {
             model: self.model.clone(),
             extern_methods: self.extern_methods.clone(),
             shared_override: self.shared_override.clone(),
+            extern_consts: self.extern_consts.clone(),
         }
     }
 
@@ -278,11 +302,21 @@ impl<'a> ViperEncodeCtx<'a> {
     }
 
     pub fn heap_type(&self) -> viper::Type {
-        self.iarray.get_type()
+        self.heap.get_type()
     }
 
-    pub fn heap_var(&self) -> (viper::LocalVarDecl, viper::Expr) {
-        self.utils.heap()
+    pub fn heap_vars(&self) -> Vec<(viper::LocalVarDecl, viper::Expr)> {
+        self.utils.heap_vars() 
+    }
+
+    pub fn gv_ref(&self) -> (viper::LocalVarDecl, viper::Expr) {
+        self.utils.gv_ref()
+    }
+
+    pub fn gv_access(&self, name: &String) -> viper::Expr<'a> {
+        let ast = self.ast;
+        let var= self.utils.gv_ref();
+        ast.field_access(var.1, ast.field(name, ast.int_type()))
     }
 
     pub fn set_mode(&mut self, mode: TranslationMode) {
@@ -330,6 +364,6 @@ impl<'a> ViperEncodeCtx<'a> {
     }
 
     pub fn get_default_args(&self) -> (Vec<viper::LocalVarDecl>, Vec<viper::Expr>) {
-        self.model.get_default_args(self.ast, self.heap_var())
+        self.model.get_default_args(self.ast, self.heap_vars())
     }
 }

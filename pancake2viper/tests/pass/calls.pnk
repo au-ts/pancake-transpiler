@@ -16,7 +16,9 @@ fun call() {
 }
 
 fun tail_call() {
-    return foo(3);
+    // todo: follow up this with Halogen
+    var y = foo(3);
+    return y;
 }
 
 fun ext_call() {

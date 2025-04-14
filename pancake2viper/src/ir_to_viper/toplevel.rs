@@ -59,14 +59,17 @@ impl<'a> TryToViper<'a> for FnDec {
         ctx.set_mode(TranslationMode::PrePost);
         pres.extend(self.pres.force_to_bool(ctx)?);
 
-        // add precondition about heap size: `requires alen(heap) == HEAP_SIZE`
+        let heap_var = ctx.utils.heap_var().1;
+        let heap_len = ctx.heap.len_f(heap_var);
+        // add a default precondition about heap size: `requires alen(heap) == HEAP_SIZE`
         pres.insert(
             0,
             ast.eq_cmp(
-                ctx.iarray.len_f(ctx.heap_var().1),
-                ast.int_lit(ctx.options.heap_size as i64),
+                heap_len,
+                ast.int_lit(ctx.options.heap_top as i64),
             ),
         );
+
         posts.extend(self.posts.force_to_bool(ctx)?);
         ctx.set_mode(TranslationMode::Normal);
 
@@ -188,12 +191,26 @@ impl<'a> ProgramToViper<'a> for Program {
         let method_ctx = Rc::new(MethodContext::new(&self.functions));
         let model = self.model.clone();
         let extern_methods = self.extern_methods.clone();
+        let extern_consts = self.extern_consts.clone();
 
         let mut predicate_names = self
             .predicates
             .iter()
             .map(|p| p.name.to_owned())
             .collect::<HashSet<_>>();
+
+        let mut ctx = ViperEncodeCtx::new(
+            types.clone(),
+            predicate_names.clone(),
+            ast,
+            options,
+            shared.clone(),
+            method_ctx.clone(),
+            model.clone(),
+            extern_methods.clone(),
+            extern_consts.clone(),
+        );
+        ctx.set_mode(TranslationMode::PrePost);
 
         let predicates = self
             .predicates
@@ -208,6 +225,7 @@ impl<'a> ProgramToViper<'a> for Program {
                     method_ctx.clone(),
                     model.clone(),
                     extern_methods.clone(),
+                    extern_consts.clone(),
                 );
                 ctx.set_mode(TranslationMode::PrePost);
                 p.to_viper(&mut ctx)
@@ -237,6 +255,7 @@ impl<'a> ProgramToViper<'a> for Program {
                     method_ctx.clone(),
                     model.clone(),
                     extern_methods.clone(),
+                    extern_consts.clone(),
                 );
                 ctx.set_mode(TranslationMode::PrePost);
                 f.to_viper(&mut ctx)
@@ -256,6 +275,7 @@ impl<'a> ProgramToViper<'a> for Program {
                     method_ctx.clone(),
                     model.clone(),
                     extern_methods.clone(),
+                    extern_consts.clone(),
                 );
                 ctx.set_mode(TranslationMode::PrePost);
                 m.to_viper(&mut ctx)
@@ -275,14 +295,18 @@ impl<'a> ProgramToViper<'a> for Program {
                     method_ctx.clone(),
                     model.clone(),
                     extern_methods.clone(),
+                    extern_consts.clone(),
                 );
                 f.to_viper(&mut ctx)
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let (domains, fields, mut methods, fs) = create_viper_prelude(ast, self.model, options);
+        let (domains, mut fields, mut methods, fs) = 
+            create_viper_prelude(ast, self.model, options);
         methods.extend(abstract_methods.iter());
         methods.extend(program_methods.iter());
         functions.extend(fs.iter());
+        fields.extend(self.global_vars.iter().map(|gv| 
+            ast.field(&gv.name, gv.typ.to_viper_type(&ctx))));
         Ok(ast.program(&domains, &fields, &functions, &predicates, &methods))
     }
 }

@@ -30,7 +30,7 @@ impl Mangleable for ir::Expr {
         use ir::Expr::*;
         match self {
             Const(_) | BaseAddr | BytesInWord | BoolLit(_) => (),
-            Var(name) => *name = mangler.mangle_var(name)?.to_owned(),
+            Var(v) => v.name = mangler.mangle_var(&v.name)?.to_owned(),
             Label(label) => *label = Mangler::mangle_fn(label),
             Struct(struc) => struc.elements.mangle(mangler)?,
             Field(field) => field.obj.mangle(mangler)?,
@@ -40,6 +40,10 @@ impl Mangleable for ir::Expr {
             BinOp(op) => {
                 op.left.mangle(mangler)?;
                 op.right.mangle(mangler)?
+            }
+            Contains(c) => {
+                c.left.mangle(mangler)?;
+                c.right.mangle(mangler)?
             }
             Shift(shift) => shift.value.mangle(mangler)?,
             MethodCall(call) => {
@@ -193,6 +197,14 @@ impl Mangleable for ir::Function {
     }
 }
 
+impl Mangleable for ir::GlobalVar {
+    fn mangle(&mut self, mangler: &mut Mangler) -> Result<(), TranslationError> {
+        mangler.switch_ctx(self.name.clone());
+        self.name = mangler.mangle_global_var(self.name.clone())?;
+        self.value.mangle(mangler)
+    }
+}
+
 impl Mangleable for ir::AbstractMethod {
     fn mangle(&mut self, mangler: &mut Mangler) -> Result<(), TranslationError> {
         mangler.switch_ctx(self.name.clone());
@@ -214,6 +226,7 @@ impl Mangleable for ir::Program {
         self.viper_functions.mangle(mangler)?;
         self.predicates.mangle(mangler)?;
         self.methods.mangle(mangler)?;
+        self.global_vars.mangle(mangler)?;
         self.functions
             .iter_mut()
             .try_for_each(|e| e.mangle(&mut mangler.clone()))?;

@@ -1,4 +1,4 @@
-fun main(1 x) {
+fun test(1 x) {
     /@ requires 0 <= x && x < 255 @/
     /@ ensures 0 <= retval && retval < 256 @/
     return x + 1;
