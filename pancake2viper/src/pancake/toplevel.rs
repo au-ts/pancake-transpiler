@@ -1,3 +1,4 @@
+use crate::pancake::Expr;
 use crate::utils::Shape;
 
 use super::Stmt;
@@ -8,6 +9,14 @@ pub struct FnDec {
     pub args: Vec<Arg>,
     pub body: Stmt,
     pub rettyp: Option<Shape>,
+}
+
+// [Int(1), Symbol("global"), Symbol("x"), Symbol(":="), List([Symbol("Const"), Symbol("0x1")])]
+#[derive(Debug, Clone)]
+pub struct GlobalVar {
+    pub name: String,
+    pub shape: Shape,
+    pub value: Expr,
 }
 
 #[derive(Debug, Clone)]
@@ -39,6 +48,7 @@ pub struct Shared {
 #[derive(Debug, Clone)]
 pub struct Program {
     pub functions: Vec<FnDec>,
+    pub global_vars: Vec<GlobalVar>,
     pub predicates: Vec<Predicate>,
     pub viper_functions: Vec<Function>,
     pub methods: Vec<Method>,

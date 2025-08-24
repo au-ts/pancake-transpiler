@@ -6,6 +6,7 @@ use crate::{
 use super::{
     AbstractMethod, BinOp, BinOpType, Expr, FnDec, Function, Model, Predicate, Program, Shared,
     Shift, Stmt, UnOp, UnOpType,
+    GlobalVar,
 };
 
 impl ConstEvalExpr for Expr {
@@ -308,10 +309,21 @@ impl ConstEval for Model {
     }
 }
 
+impl ConstEval for GlobalVar {
+    fn const_eval(self, options: &EncodeOptions) -> Self {
+        Self {
+            name: self.name,
+            typ: self.typ,
+            value: self.value.const_eval(options),
+        }
+    }
+}
+
 impl ConstEval for Program {
     fn const_eval(self, options: &EncodeOptions) -> Self {
         Self {
             functions: self.functions.const_eval(options),
+            global_vars: self.global_vars.const_eval(options),
             methods: self.methods.const_eval(options),
             predicates: self.predicates.const_eval(options),
             viper_functions: self.viper_functions.const_eval(options),

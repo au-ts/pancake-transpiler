@@ -294,6 +294,9 @@ impl ir::Program {
         for (k, v) in &self.extern_consts {
             ctx.set_type(k.clone(),v.clone());
         }
+        for g in &self.global_vars {
+            ctx.set_type(g.name.clone(), g.typ.clone());
+        }
         loop {
             ignore_unknown(self.viper_functions.resolve_type(true, &mut ctx))?;
             ignore_unknown(self.predicates.resolve_type(true, &mut ctx))?;

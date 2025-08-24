@@ -15,7 +15,7 @@ use crate::{pancake, utils::Shape};
 use SExpr::*;
 
 /// S-expression definition for parsing of `cake`'s explore output
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum SExpr {
     Int(u64),
     Float(f64),
@@ -61,11 +61,14 @@ impl SexprFactory for SExprParser {
 
 impl Expr {
     fn parse(s: &[SExpr]) -> anyhow::Result<Self> {
+        // println!("{:?}", s);
         match s {
             [Symbol(cons), Symbol(word)] if cons == "Const" && word.starts_with("0x") => {
                 Ok(Self::Const(u64::from_str_radix(&word[2..], 16)? as i64))
             }
-            [Symbol(var), Symbol(name)] if var == "Var" => Ok(Self::Var(name.clone())),
+            [Symbol(var), Symbol(l), Symbol(name)] if var == "Var" && l == "local" => Ok(Self::Var(name.clone())),
+            // todo: perhaps need to another enum for global var
+            [Symbol(var), Symbol(l), Symbol(name)] if var == "Var" && l == "global" => Ok(Self::Var(name.clone())),
             [Symbol(label), Symbol(name)] if label == "Label" => Ok(Self::Label(name.clone())),
             [Symbol(struc), exps @ ..] if struc == "Struct" => {
                 Ok(Self::Struct(Struct::new(Self::parse_slice(exps)?)))
@@ -150,18 +153,21 @@ impl Stmt {
             [Symbol(op), List(decl)] if op == "dec" => {
                 Self::parse_dec(decl.iter().collect::<Vec<_>>(), None)
             }
-            [Symbol(var), Symbol(eq), List(exp)] if eq == ":=" => Ok(Self::Assign(Assign {
+            [Symbol(l), Symbol(var), Symbol(eq), List(exp)] 
+                if l == "local" && eq == ":=" => 
+                Ok(Self::Assign(Assign {
                 lhs: var.clone(),
                 rhs: Expr::parse(exp)?,
             })),
-            [Symbol(op), List(addr), Symbol(eq), List(exp)] if op == "mem" && eq == ":=" => {
+            [Symbol(l), Symbol(op), List(addr), Symbol(eq), List(exp)] 
+                if l == "local" && op == "mem" && eq == ":=" => {
                 Ok(Self::Store(Store {
                     address: Expr::parse(addr)?,
                     value: Expr::parse(exp)?,
                 }))
             }
-            [Symbol(op), List(addr), Symbol(eq), Symbol(byte), List(exp)]
-                if op == "mem" && eq == ":=" && byte == "byte" =>
+            [Symbol(l), Symbol(op), List(addr), Symbol(eq), Symbol(byte), List(exp)]
+                if l == "local" && op == "mem" && eq == ":=" && byte == "byte" =>
             {
                 Ok(Self::StoreBits(StoreBits {
                     address: Expr::parse(addr)?,
@@ -327,7 +333,9 @@ impl Stmt {
             None => Self::Skip,
         };
         match &decl[..] {
-            [Symbol(var), Symbol(eq), List(exp)] if eq == ":=" => {
+            [Symbol(l), Symbol(var), Symbol(eq), List(exp)] 
+                if l == "local" && eq == ":=" => 
+            {
                 Ok(Self::Declaration(Declaration {
                     lhs: var.clone(),
                     rhs: Expr::parse(exp)?,
@@ -397,14 +405,36 @@ impl FnDec {
             List(l) => match &l[..] {
                 [Symbol(fun_dec), Symbol(name), List(args), List(body)] if fun_dec == "func" => {
                     let args = args.iter().map(Arg::parse).collect::<anyhow::Result<_>>()?;
+                    let t: Vec<_> = body.iter().collect();
+                    let x = Stmt::parse(t);
+                    let body1 = x?;
                     Ok(Self {
                         fname: name.clone(),
                         args,
-                        body: Stmt::parse(body.iter().collect())?,
+                        body: body1,
                         rettyp: None,
                     })
                 }
-                _ => Err(anyhow!("Shape of SExpr::List does not match")),
+                _ => Err(anyhow!("FnDec Shape of SExpr::List does not match")),
+            },
+            _ => Err(anyhow!("SExpr is not a list")),
+        }
+    }
+}
+
+impl GlobalVar {
+    fn parse(s: SExpr) -> anyhow:: Result<Self> {
+        match s {
+            List(l) => match &l[..] {
+                [Int(i), Symbol(g), Symbol(var_name), Symbol(assign), List(body)] 
+                    if *i == 1 && g == "global" && assign == ":=" => {
+                    Ok(Self{
+                        name: var_name.clone(),
+                        shape: Shape::Simple,
+                        value: Expr::parse(body)?,
+                    })
+                },
+                _ => Err(anyhow!("GlobalVar Shape of SExpr::List does not match")),
             },
             _ => Err(anyhow!("SExpr is not a list")),
         }
@@ -481,17 +511,26 @@ impl Program {
         let extern_consts = Self::get_toplevel_annotations(&s, "extern const");
         let extern_methods = Self::get_toplevel_annotations(&s, "ffi");
 
-        let functions = get_sexprs(s, cake_path)?
+        let sexprs = get_sexprs(s, cake_path)?
             .iter()
-            .map(|s| {
-                SExprParser
-                    .parse(s)
-                    .map_err(|e| anyhow!("{e}"))
-                    .and_then(FnDec::parse)
-            })
-            .collect::<anyhow::Result<_>>()?;
+            .map(|s| SExprParser.parse(s).map_err(|e| anyhow!("{e}")))
+            .collect::<anyhow::Result<Vec<_>>>()?;
+
+        let mut functions = Vec::new();
+        let mut global_vars = Vec::new();
+
+        for sexpr in sexprs {
+            if let Ok(func) = FnDec::parse(sexpr.clone()) {
+                functions.push(func);
+            } 
+            else if let Ok(var) = GlobalVar::parse(sexpr.clone()) {
+                global_vars.push(var);
+            }
+        }
+        // println!("Functions: {:?}", functions);
         Ok(pancake::Program {
             functions,
+            global_vars,
             predicates,
             viper_functions,
             methods,

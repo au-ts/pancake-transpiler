@@ -78,6 +78,18 @@ impl TryToIR for pancake::Shared {
     }
 }
 
+impl TryToIR for pancake::GlobalVar {
+    type Output = ir::GlobalVar;
+
+    fn to_ir(self) -> Result<Self::Output, TranslationError> {
+        Ok(Self::Output {
+            name: self.name,
+            typ: self.shape.to_type(false),
+            value: self.value.to_ir()?,
+        })
+    }
+}
+
 impl TryFrom<pancake::Program> for ir::Program {
     type Error = TranslationError;
 
@@ -85,6 +97,7 @@ impl TryFrom<pancake::Program> for ir::Program {
         let viper_functions = value.viper_functions.to_ir()?;
         let predicates = value.predicates.to_ir()?;
         let functions = value.functions.to_ir()?;
+        let global_vars = value.global_vars.to_ir()?;
         let methods = value.methods.to_ir()?;
         let shared = value.shared.to_ir()?;
 
@@ -145,6 +158,7 @@ impl TryFrom<pancake::Program> for ir::Program {
 
         Ok(ir::Program {
             functions,
+            global_vars,
             predicates,
             viper_functions,
             methods,

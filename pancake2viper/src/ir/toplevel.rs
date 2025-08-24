@@ -13,6 +13,13 @@ pub struct FnDec {
     pub trusted: bool,
 }
 
+#[derive(Debug, Clone)]
+pub struct GlobalVar {
+    pub name: String,
+    pub typ: Type,
+    pub value: Expr,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Arg {
     pub name: String,
@@ -71,6 +78,8 @@ pub struct Model {
 #[derive(Debug, Clone)]
 pub struct Program {
     pub functions: Vec<FnDec>,
+    // todo: support multi-word shape
+    pub global_vars: Vec<GlobalVar>,
     pub predicates: Vec<Predicate>,
     pub viper_functions: Vec<Function>,
     pub methods: Vec<AbstractMethod>,

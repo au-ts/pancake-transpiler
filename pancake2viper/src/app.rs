@@ -208,7 +208,8 @@ impl App {
 
         let fields_set = program.model.fields.clone().into_iter().collect::<HashSet<String>>();
         let consts_set = program.extern_consts.keys().cloned().collect::<HashSet<String>>();
-        let mangler_set = fields_set.union(&consts_set).cloned().collect::<HashSet<String>>();
+        let mut mangler_set = fields_set.union(&consts_set).cloned().collect::<HashSet<String>>();
+        mangler_set.extend(program.global_vars.iter().map(|gv| gv.name.clone()));
 
         run_step!(self, "Mangling", {
             program.mangle(&mut Mangler::new(mangler_set))?

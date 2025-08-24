@@ -288,7 +288,8 @@ impl<'a> ProgramToViper<'a> for Program {
                 f.to_viper(&mut ctx)
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let (domains, fields, mut methods, fs) = create_viper_prelude(ast, self.model, options);
+        let (domains, fields, mut methods, fs) = 
+            create_viper_prelude(ast, self.model, self.global_vars, options);
         methods.extend(abstract_methods.iter());
         methods.extend(program_methods.iter());
         functions.extend(fs.iter());
