@@ -432,6 +432,11 @@ impl<'a> TryToViper<'a> for ir::Expr {
                 Const(c) => ast.int_lit(c),
                 BoolLit(b) if b => ast.true_lit(),
                 BoolLit(b) if !b => ast.false_lit(),
+                GlobalVar(name) => {
+                    let (_gv_decl, gv) = ast.new_var("gv", ast.ref_type());
+                    ast.field_access(gv, 
+                        ast.field(&name.clone(), ast.int_type()))
+                },
                 Var(name) if name == "result" => ast.result_with_pos(
                     ctx.get_type("result")?.to_viper_type(ctx),
                     ast.no_position(),

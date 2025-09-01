@@ -20,7 +20,7 @@ lazy_static::lazy_static! {
     pub static ref RESERVED: HashMap<&'static str, Type> = HashMap::from([
         ("local_mem", Type::Seq(Box::new(Type::Ref))),
         ("shared_mem", Type::Seq(Box::new(Type::Ref))),
-        ("gv", Type::Seq(Box::new(Type::Ref))),
+        ("gv", Type::Ref),
         ("read", Type::Void),
         ("write", Type::Void),
         ("wildcard", Type::Void),

@@ -150,6 +150,7 @@ impl TryToIR for pancake::Expr {
         use pancake::Expr::*;
         Ok(match self {
             Const(c) => Self::Output::Const(c),
+            GlobalVar(varname) => Self::Output::GlobalVar(varname),
             Var(varname) => Self::Output::Var(varname),
             Label(label) => Self::Output::Label(label),
             Struct(struc) => Self::Output::Struct(struc.to_ir()?),

@@ -30,6 +30,7 @@ impl Mangleable for ir::Expr {
         use ir::Expr::*;
         match self {
             Const(_) | BaseAddr | BytesInWord | BoolLit(_) => (),
+            GlobalVar(name) => *name = mangler.mangle_var(name)?.to_owned(),
             Var(name) => *name = mangler.mangle_var(name)?.to_owned(),
             Label(label) => *label = Mangler::mangle_fn(label),
             Struct(struc) => struc.elements.mangle(mangler)?,
@@ -200,7 +201,7 @@ impl Mangleable for ir::Function {
 impl Mangleable for ir::GlobalVar {
     fn mangle(&mut self, mangler: &mut Mangler) -> Result<(), TranslationError> {
         mangler.switch_ctx(self.name.clone());
-        mangler.global_var_mangle(self.name.clone())?;
+        self.name = mangler.mangle_global_var(self.name.clone())?;
         self.value.mangle(mangler)
     }
 }

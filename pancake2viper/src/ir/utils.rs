@@ -280,6 +280,7 @@ impl ExprSubstitution for Expr {
             Self::BaseAddr
             | Self::BoolLit(_)
             | Self::Const(_)
+            | Self::GlobalVar(_)
             | Self::Var(_)
             | Self::Label(_)
             | Self::BytesInWord => false,

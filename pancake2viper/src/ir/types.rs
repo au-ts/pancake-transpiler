@@ -36,6 +36,7 @@ impl ExprTypeResolution for ir::Expr {
             BinOp(op) => op.resolve_expr_type(is_annot, ctx),
             UnOp(op) => op.resolve_expr_type(is_annot, ctx),
             AccessPredicate(_) | AccessSlice(_) => Ok(Type::Bool),
+            GlobalVar(name) => ctx.get_type_no_mangle(name),
             Var(name) => ctx.get_type_no_mangle(name),
             Label(_) => unreachable!(),
             Struct(struc) => Ok(struc.to_shape(ctx)?.to_type(is_annot)),

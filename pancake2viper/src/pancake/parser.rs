@@ -68,7 +68,8 @@ impl Expr {
             }
             [Symbol(var), Symbol(l), Symbol(name)] if var == "Var" && l == "local" => Ok(Self::Var(name.clone())),
             // todo: perhaps need to another enum for global var
-            [Symbol(var), Symbol(l), Symbol(name)] if var == "Var" && l == "global" => Ok(Self::Var(name.clone())),
+            [Symbol(var), Symbol(l), Symbol(name)] 
+                if var == "Var" && l == "global" => Ok(Self::GlobalVar(name.clone())),
             [Symbol(label), Symbol(name)] if label == "Label" => Ok(Self::Label(name.clone())),
             [Symbol(struc), exps @ ..] if struc == "Struct" => {
                 Ok(Self::Struct(Struct::new(Self::parse_slice(exps)?)))

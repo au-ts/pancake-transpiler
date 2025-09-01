@@ -94,7 +94,11 @@ impl TypeContext {
         self.type_map
             .get(var)
             .cloned()
-            .ok_or(TranslationError::UnknownShape(var.to_owned()))
+            .ok_or_else(|| {
+                // println!("Error: variable '{}' not found", var);
+                // println!("Available types in type_map: {:?}", self.type_map);
+                TranslationError::UnknownShape(var.to_owned())
+            })
     }
 
     pub fn get_function_type(&self, fname: &str) -> Result<Type, TranslationError> {
