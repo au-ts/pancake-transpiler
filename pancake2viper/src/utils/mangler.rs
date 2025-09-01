@@ -54,6 +54,16 @@ impl Mangler {
         self.arg_map.clear();
     }
 
+    pub fn global_var_mangle(
+        &mut self,
+        name: String
+    ) -> Result<(), MangleError> {
+        if RESERVED.contains_key(name.as_str()) {
+            return Err(MangleError::ReservedKeyword(name));
+        }
+        Ok(())
+    }
+
     pub fn new_mangled_var(
         &mut self,
         name: String,

@@ -197,6 +197,14 @@ impl Mangleable for ir::Function {
     }
 }
 
+impl Mangleable for ir::GlobalVar {
+    fn mangle(&mut self, mangler: &mut Mangler) -> Result<(), TranslationError> {
+        mangler.switch_ctx(self.name.clone());
+        mangler.global_var_mangle(self.name.clone())?;
+        self.value.mangle(mangler)
+    }
+}
+
 impl Mangleable for ir::AbstractMethod {
     fn mangle(&mut self, mangler: &mut Mangler) -> Result<(), TranslationError> {
         mangler.switch_ctx(self.name.clone());
@@ -218,6 +226,7 @@ impl Mangleable for ir::Program {
         self.viper_functions.mangle(mangler)?;
         self.predicates.mangle(mangler)?;
         self.methods.mangle(mangler)?;
+        self.global_vars.mangle(mangler)?;
         self.functions
             .iter_mut()
             .try_for_each(|e| e.mangle(&mut mangler.clone()))?;

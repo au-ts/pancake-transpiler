@@ -3,6 +3,7 @@ pub mod ext_calls;
 pub mod heap;
 pub mod shared_mem;
 pub mod utils;
+use std::vec;
 
 use bitvector::create_bv_domain;
 pub use heap::HeapHelper;
@@ -24,11 +25,8 @@ pub fn create_viper_prelude(
     let heap = HeapHelper::new(ast);
     let utils = Utils::new(ast, heap.get_type(), model);
     let domains = vec![create_bv_domain(ast)];
-    let mut fields = vec![
-        ast.field("pan", ast.int_type()),
-        ast.field("shared", ast.int_type()),
-    ];
 
+    let mut fields = Vec::new();
     // todo: support multi-word type
     fields.extend(global_vars.iter().map(|gv| ast.field(&gv.name, ast.int_type())));
     let methods = create_shared_mem_methods(ast, &utils);

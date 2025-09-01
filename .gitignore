@@ -6,3 +6,4 @@ pancake2viper/Cargo.lock
 *.log
 **/tests/**/*.vpr
 !pancake2viper/tests/shared/model.vpr
+settings.json

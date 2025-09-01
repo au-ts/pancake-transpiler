@@ -355,9 +355,9 @@ impl Model {
     pub fn get_default_args<'a>(
         &self,
         ast: AstFactory<'a>,
-        heap_var: (viper::LocalVarDecl<'a>, viper::Expr<'a>),
+        heap_vars: Vec<(viper::LocalVarDecl<'a>, viper::Expr<'a>)>,
     ) -> (Vec<viper::LocalVarDecl<'a>>, Vec<viper::Expr<'a>>) {
-        std::iter::once(heap_var)
+        heap_vars.into_iter()
             .chain(
                 self.fields
                     .iter()

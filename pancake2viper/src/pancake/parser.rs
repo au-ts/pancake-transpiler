@@ -333,7 +333,8 @@ impl Stmt {
             None => Self::Skip,
         };
         match &decl[..] {
-            [Symbol(l), Symbol(var), Symbol(eq), List(exp)] 
+            // todo: clean up shape-checking support
+            [Int(_i), Symbol(l), Symbol(var), Symbol(eq), List(exp)] 
                 if l == "local" && eq == ":=" => 
             {
                 Ok(Self::Declaration(Declaration {
@@ -403,10 +404,13 @@ impl FnDec {
     fn parse(s: SExpr) -> anyhow::Result<Self> {
         match s {
             List(l) => match &l[..] {
-                [Symbol(fun_dec), Symbol(name), List(args), List(body)] if fun_dec == "func" => {
+                // todo: clean up shape-checking support
+                [Int(_i), Symbol(fun_dec), Symbol(name), List(args), List(body)] if fun_dec == "func" => {
                     let args = args.iter().map(Arg::parse).collect::<anyhow::Result<_>>()?;
+                    // println!("{:?}", body);
                     let t: Vec<_> = body.iter().collect();
                     let x = Stmt::parse(t);
+                    // println!("{:?}", x);
                     let body1 = x?;
                     Ok(Self {
                         fname: name.clone(),
@@ -415,9 +419,15 @@ impl FnDec {
                         rettyp: None,
                     })
                 }
-                _ => Err(anyhow!("FnDec Shape of SExpr::List does not match")),
+                _ => {
+                    // println!("List: {:?}", l);
+                    Err(anyhow!("FnDec Shape of SExpr::List does not match"))
+                },
             },
-            _ => Err(anyhow!("SExpr is not a list")),
+            _ => {
+                // println!("SExpr: {:?}", s);
+                Err(anyhow!("SExpr is not a list"))
+            },
         }
     }
 }

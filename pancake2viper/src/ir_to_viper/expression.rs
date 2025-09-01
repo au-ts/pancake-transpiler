@@ -326,8 +326,8 @@ impl<'a> TryToViper<'a> for ir::ArrayAccess {
         let heap = ctx.heap;
         use crate::viper_prelude::heap::MemType;
         match self.mem_type.as_str() {
-            "pan" => Ok(heap.access(obj, idx, MemType::Pancake)),
-            "shared" => Ok(heap.access(obj, idx, MemType::Shared)),
+            "local_mem" => Ok(heap.access(obj, idx, MemType::Pancake)),
+            "shared_mem" => Ok(heap.access(obj, idx, MemType::Shared)),
             _ => unreachable!("Expected memory cell type: pan and shared, got {:?}", self.mem_type.as_str())
         }
     }

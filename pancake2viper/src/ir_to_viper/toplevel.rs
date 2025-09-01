@@ -59,8 +59,8 @@ impl<'a> TryToViper<'a> for FnDec {
         ctx.set_mode(TranslationMode::PrePost);
         pres.extend(self.pres.force_to_bool(ctx)?);
 
-        let heap_var = ctx.heap_var().1;
-        let heap_len = ast.seq_length(heap_var);
+        let local_mem = ctx.utils.local_mem().1;
+        let heap_len = ast.seq_length(local_mem);
         // add precondition about heap size: `requires alen(heap) == HEAP_SIZE`
         pres.insert(
             0,
@@ -69,7 +69,7 @@ impl<'a> TryToViper<'a> for FnDec {
                 ast.int_lit(ctx.options.heap_top as i64),
             ),
         );
-        pres.insert(1, ctx.heap.heap_injective(heap_var));
+        pres.insert(1, ctx.heap.heap_injective(local_mem));
 
         posts.extend(self.posts.force_to_bool(ctx)?);
         ctx.set_mode(TranslationMode::Normal);

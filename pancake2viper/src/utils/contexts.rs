@@ -290,8 +290,8 @@ impl<'a> ViperEncodeCtx<'a> {
         self.heap.get_type()
     }
 
-    pub fn heap_var(&self) -> (viper::LocalVarDecl, viper::Expr) {
-        self.utils.heap()
+    pub fn heap_vars(&self) -> Vec<(viper::LocalVarDecl, viper::Expr)> {
+        self.utils.heap_vars() 
     }
 
     pub fn set_mode(&mut self, mode: TranslationMode) {
@@ -339,6 +339,6 @@ impl<'a> ViperEncodeCtx<'a> {
     }
 
     pub fn get_default_args(&self) -> (Vec<viper::LocalVarDecl>, Vec<viper::Expr>) {
-        self.model.get_default_args(self.ast, self.heap_var())
+        self.model.get_default_args(self.ast, self.heap_vars())
     }
 }

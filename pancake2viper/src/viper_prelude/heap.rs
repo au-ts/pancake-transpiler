@@ -51,12 +51,12 @@ impl<'a> HeapHelper<'a> {
 
     /// The internal Pancake memory
     pub fn field_internal(&self) -> Field<'a> {
-        self.ast.field("pan", self.ast.int_type())
+        self.ast.field("local_mem", self.ast.int_type())
     }
 
     /// Shared memory
     pub fn field_shared(&self) -> Field<'a> {
-        self.ast.field("shared", self.ast.int_type())
+        self.ast.field("shared_mem", self.ast.int_type())
     }
 
     /// Encodes the following predicate for slice access of an Heap
