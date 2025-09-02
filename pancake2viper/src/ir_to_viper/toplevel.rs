@@ -288,11 +288,13 @@ impl<'a> ProgramToViper<'a> for Program {
                 f.to_viper(&mut ctx)
             })
             .collect::<Result<Vec<_>, _>>()?;
-        let (domains, fields, mut methods, fs) = 
-            create_viper_prelude(ast, self.model, self.global_vars, options);
+        let (domains, mut fields, mut methods, fs) = 
+            create_viper_prelude(ast, self.model, options);
         methods.extend(abstract_methods.iter());
         methods.extend(program_methods.iter());
         functions.extend(fs.iter());
+        // todo: support multi-word type
+        fields.extend(self.global_vars.iter().map(|gv| ast.field(&gv.name, ast.int_type())));
         Ok(ast.program(&domains, &fields, &functions, &predicates, &methods))
     }
 }

@@ -11,12 +11,11 @@ use shared_mem::create_shared_mem_methods;
 use utils::{bound_bits_function, bound_function, Utils};
 use viper::{AstFactory, Domain, Field, Function, Method};
 
-use crate::{ir::{GlobalVar, Model}, utils::EncodeOptions};
+use crate::{ir::Model, utils::EncodeOptions};
 
 pub fn create_viper_prelude(
     ast: AstFactory,
     model: Model,
-    global_vars: Vec<GlobalVar>,
     options: EncodeOptions,
 ) -> (Vec<Domain>, Vec<Field>, Vec<Method>, Vec<Function>) {
     if !options.include_prelude {
@@ -27,8 +26,6 @@ pub fn create_viper_prelude(
     let domains = vec![create_bv_domain(ast)];
 
     let mut fields = Vec::new();
-    // todo: support multi-word type
-    fields.extend(global_vars.iter().map(|gv| ast.field(&gv.name, ast.int_type())));
     fields.push(ast.field("local_mem", ast.int_type()));
     fields.push(ast.field("shared_mem", ast.int_type()));
 

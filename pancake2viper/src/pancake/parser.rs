@@ -417,10 +417,8 @@ impl FnDec {
                 // todo: clean up shape-checking support
                 [Int(_i), Symbol(fun_dec), Symbol(name), List(args), List(body)] if fun_dec == "func" => {
                     let args = args.iter().map(Arg::parse).collect::<anyhow::Result<_>>()?;
-                    // println!("{:?}", body);
                     let t: Vec<_> = body.iter().collect();
                     let x = Stmt::parse(t);
-                    // println!("{:?}", x);
                     let body1 = x?;
                     Ok(Self {
                         fname: name.clone(),
