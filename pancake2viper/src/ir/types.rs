@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::{
     ir::{self, Expr},
     utils::{
@@ -275,7 +273,7 @@ impl TypeResolution for ir::Model {
 
 impl ir::Program {
     pub fn resolve_types(&self) -> Result<TypeContext, TranslationError> {
-        let mut ctx = TypeContext::new(Rc::new(self.extern_fields.clone()));
+        let mut ctx = TypeContext::new(self.extern_fields.clone());
         let mut prev_size = ctx.size();
 
         for ffi in &self.extern_methods {
@@ -296,7 +294,7 @@ impl ir::Program {
             ctx.set_type(k.clone(),v.clone());
         }
         for g in &self.global_vars {
-            ctx.set_type(g.name.clone(), g.typ.clone());
+            ctx.insert_field(g.name.clone(), g.typ.clone());
         }
         loop {
             ignore_unknown(self.viper_functions.resolve_type(true, &mut ctx))?;

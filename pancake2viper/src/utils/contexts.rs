@@ -43,7 +43,7 @@ impl From<AnnotationType> for TranslationMode {
 #[derive(Debug, Clone)]
 pub struct TypeContext {
     type_map: HashMap<String, Type>,
-    fields: Rc<HashMap<String, Type>>,
+    fields: HashMap<String, Type>,
 }
 
 type Exprs = Vec<ir::Expr>;
@@ -78,7 +78,7 @@ impl MethodContext {
 }
 
 impl TypeContext {
-    pub fn new(fields: Rc<HashMap<String, Type>>) -> Self {
+    pub fn new(fields: HashMap<String, Type>) -> Self {
         let type_map = RESERVED
             .iter()
             .map(|(&s, t)| (s.to_owned(), t.clone()))
@@ -109,6 +109,11 @@ impl TypeContext {
             .cloned()
     }
 
+    pub fn insert_field(&mut self, var: String, typ: Type) {
+        self.fields.insert(var.clone(), typ.clone());
+        self.type_map.insert(var, typ);
+    }
+
     pub fn set_type(&mut self, var: String, typ: Type) {
         self.type_map.insert(var, typ);
     }
@@ -121,13 +126,18 @@ impl TypeContext {
         self.fields
             .get(field)
             .map(|t| t.to_owned())
-            .ok_or(TranslationError::UnknownField(field.to_owned()))
+            .ok_or_else( || {
+                // println!("Error: Unknown Field '{}'", field);
+                // println!("Available types in field_map: {:?}", self.fields);
+                // println!("Available types in type_map: {:?}", self.type_map);
+                TranslationError::UnknownField(field.to_owned())
+            })
     }
 }
 
 impl Default for TypeContext {
     fn default() -> Self {
-        Self::new(Rc::new(HashMap::new()))
+        Self::new(HashMap::new())
     }
 }
 
