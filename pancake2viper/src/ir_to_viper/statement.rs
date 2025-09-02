@@ -141,21 +141,33 @@ impl<'a> TryToViper<'a> for ir::Assign {
     type Output = viper::Stmt<'a>;
     fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError> {
         let ast = ctx.ast;
-        let lhs_shape = ctx.get_type(&self.lhs)?;
-        // let rhs_shape = self.rhs.to_shape(ctx.typectx_get())?;
-        // FIXME: add type checking
-        // if lhs_shape != rhs_shape {
-        //     return Err(ToViperError::MismatchedShapes(lhs_shape, rhs_shape));
-        // }
-        let var = ast.new_var(&self.lhs, lhs_shape.to_viper_type(ctx));
+        if self.global {
+            let ast = ctx.ast;
+            let var = ctx.gv_access(&self.lhs);
+            let ass = ast.field_assign(var, self.rhs.to_viper(ctx)?);
+            let decls = ctx.pop_decls();
 
-        let ass = ast.local_var_assign(var.1, self.rhs.to_viper(ctx)?);
-        let decls = ctx.pop_decls();
+            ctx.stack.push(ass);
+            let seq = ast.seqn(&ctx.stack, &decls);
+            ctx.stack.clear();
+            Ok(seq)
+        } else {
+            let lhs_shape = ctx.get_type(&self.lhs)?;
+            // let rhs_shape = self.rhs.to_shape(ctx.typectx_get())?;
+            // FIXME: add type checking
+            // if lhs_shape != rhs_shape {
+            //     return Err(ToViperError::MismatchedShapes(lhs_shape, rhs_shape));
+            // }
+            let var = ast.new_var(&self.lhs, lhs_shape.to_viper_type(ctx));
 
-        ctx.stack.push(ass);
-        let seq = ast.seqn(&ctx.stack, &decls);
-        ctx.stack.clear();
-        Ok(seq)
+            let ass = ast.local_var_assign(var.1, self.rhs.to_viper(ctx)?);
+            let decls = ctx.pop_decls();
+
+            ctx.stack.push(ass);
+            let seq = ast.seqn(&ctx.stack, &decls);
+            ctx.stack.clear();
+            Ok(seq)
+        }
     }
 }
 

@@ -185,6 +185,7 @@ impl ConstEval for Stmt {
             Assign(ass) => Assign(ir::Assign {
                 lhs: ass.lhs,
                 rhs: ass.rhs.const_eval(options),
+                global: ass.global,
             }),
             Store(st) => Store(ir::Store {
                 address: st.address.const_eval(options),

@@ -36,6 +36,7 @@ pub struct Declaration {
 pub struct Assign {
     pub lhs: String,
     pub rhs: Expr,
+    pub global: bool,
 }
 
 #[derive(Debug, Clone, Copy)]

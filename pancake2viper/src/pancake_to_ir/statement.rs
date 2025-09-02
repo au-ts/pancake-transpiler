@@ -19,6 +19,7 @@ impl TryToIR for pancake::Assign {
         Ok(Self::Output {
             lhs: self.lhs,
             rhs: self.rhs.to_ir()?,
+            global: self.global,
         })
     }
 }
@@ -159,6 +160,7 @@ impl TryToIR for pancake::Return {
                 ir::Stmt::Assign(ir::Assign {
                     lhs: "retval".into(),
                     rhs: self.value.to_ir()?,
+                    global: false,
                 }),
                 ir::Stmt::Return,
             ],
@@ -193,6 +195,7 @@ impl TryToIR for pancake::TailCall {
                         fname: self.fname.get_label()?,
                         args,
                     }),
+                    global: false,
                 }),
                 ir::Stmt::Return,
             ],

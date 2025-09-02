@@ -159,7 +159,16 @@ impl Stmt {
                 Ok(Self::Assign(Assign {
                 lhs: var.clone(),
                 rhs: Expr::parse(exp)?,
+                global: false,
             })),
+            [Symbol(g), Symbol(gv_name), Symbol(eq), List(exp)]
+            if g == "global" && eq == ":=" => {
+                Ok(Self::Assign(Assign {
+                    lhs: gv_name.clone(),
+                    rhs: Expr::parse(exp)?,
+                    global: true,
+                }))
+            },
             [Symbol(l), Symbol(op), List(addr), Symbol(eq), List(exp)] 
                 if l == "local" && op == "mem" && eq == ":=" => {
                 Ok(Self::Store(Store {

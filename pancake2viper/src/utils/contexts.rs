@@ -308,6 +308,16 @@ impl<'a> ViperEncodeCtx<'a> {
         self.utils.heap_vars() 
     }
 
+    pub fn gv_ref(&self) -> (viper::LocalVarDecl, viper::Expr) {
+        self.utils.gv_ref()
+    }
+
+    pub fn gv_access(&self, name: &String) -> viper::Expr<'a> {
+        let ast = self.ast;
+        let var= self.utils.gv_ref();
+        ast.field_access(var.1, ast.field(name, ast.int_type()))
+    }
+
     pub fn set_mode(&mut self, mode: TranslationMode) {
         self.mode = mode;
     }
