@@ -23,15 +23,14 @@ impl<'a> TryToViper<'a> for ir::Load {
             ctx.stack.push(assertion);
         }
 
-        // todo: clean up the "heap" naming mess
-        let local_mem = ctx.utils.local_mem().1;
+        let heap_var = ctx.utils.heap_var().1;
         Ok(if self.shape.is_simple() {
-            heap.access(local_mem, addr_exp, MemType::Pancake)
+            heap.access(heap_var, addr_exp, MemType::Pancake)
         } else {
             let length = self.shape.len() as i64;
             let elems = (0..length)
                 .map(|offset| {
-                    heap.access(local_mem, ast.add(addr_exp, ast.int_lit(offset)), MemType::Pancake)
+                    heap.access(heap_var, ast.add(addr_exp, ast.int_lit(offset)), MemType::Pancake)
                 })
                 .collect::<Vec<_>>();
             ast.explicit_seq(&elems)
@@ -94,10 +93,10 @@ impl<'a> TryToViper<'a> for ir::Store {
 
         let rhs_shape = self.value.to_shape(ctx.typectx_get_mut())?;
         let rhs = self.value.to_viper(ctx)?;
-        let local_mem = ctx.utils.local_mem().1;
+        let heap_var = ctx.utils.heap_var().1;
 
         let store = if rhs_shape.is_simple() {
-            ast.field_assign(heap.access(local_mem, addr_expr, MemType::Pancake), rhs)
+            ast.field_assign(heap.access(heap_var, addr_expr, MemType::Pancake), rhs)
         } else {
             let length = rhs_shape.len() as i64;
 
@@ -106,7 +105,7 @@ impl<'a> TryToViper<'a> for ir::Store {
                     let src = ast.seq_index(rhs, ast.int_lit(offset));
                     let dst = ctx
                         .heap
-                        .access(local_mem, ast.add(addr_expr, ast.int_lit(offset)), MemType::Pancake);
+                        .access(heap_var, ast.add(addr_expr, ast.int_lit(offset)), MemType::Pancake);
                     ast.local_var_assign(dst, src)
                 })
                 .collect::<Vec<_>>();
@@ -153,8 +152,8 @@ impl<'a> TryToViper<'a> for ir::StoreBits {
             ast.int_to_backend_bv(BV64, self.value.to_viper(ctx)?),
         );
         let value = ast.bv_binop(BinOpBv::BvShl, BV64, value, shift_amount);
-        let local_mem = ctx.utils.local_mem().1;
-        let old = ast.int_to_backend_bv(BV64, heap.access(local_mem, word_address, MemType::Pancake));
+        let heap_var = ctx.utils.heap_var().1;
+        let old = ast.int_to_backend_bv(BV64, heap.access(heap_var, word_address, MemType::Pancake));
         let new = ast.bv_binop(
             BinOpBv::BitOr,
             BV64,
@@ -162,7 +161,7 @@ impl<'a> TryToViper<'a> for ir::StoreBits {
             ast.bv_binop(BinOpBv::BitAnd, BV64, value, mask),
         );
         let new = ast.backend_bv_to_int(BV64, new);
-        let field_ass = ast.field_assign(heap.access(local_mem, word_address, MemType::Pancake), new);
+        let field_ass = ast.field_assign(heap.access(heap_var, word_address, MemType::Pancake), new);
         Ok(ast.seqn(&[assertion, field_ass], &[]))
     }
 }

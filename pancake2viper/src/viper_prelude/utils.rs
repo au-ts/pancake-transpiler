@@ -67,12 +67,16 @@ impl<'a> Utils<'a> {
         )
     }
 
-    pub fn local_mem(&self) -> (LocalVarDecl<'a>, Expr<'a>) {
-        self.ast.new_var("local_mem", self.heap_typ)
+    pub fn heap_var(&self) -> (LocalVarDecl<'a>, Expr<'a>) {
+        self.ast.new_var("heap", self.heap_typ)
     }
 
-    pub fn shared_mem(&self) -> (LocalVarDecl<'a>, Expr<'a>) {
-        self.ast.new_var("shared_mem", self.heap_typ)
+    pub fn local_mem(&self) -> (LocalVarDecl<'_>, Expr<'_>) {
+        self.ast.new_var("local_mem", self.ast.int_type())
+    }
+
+    pub fn shared_mem(&self) -> (LocalVarDecl<'_>, Expr<'_>) {
+        self.ast.new_var("shared_mem", self.ast.int_type())
     }
 
     pub fn gv_ref(&self) -> (LocalVarDecl<'a>, Expr<'a>) {
@@ -81,8 +85,7 @@ impl<'a> Utils<'a> {
 
     pub fn heap_vars(&self) -> Vec<(LocalVarDecl<'a>, Expr<'a>)> {
         let heap_vars = vec![
-            self.local_mem(), 
-            self.shared_mem(),
+            self.heap_var(), 
             self.gv_ref()];
         heap_vars
     }

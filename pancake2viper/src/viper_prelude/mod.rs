@@ -29,6 +29,9 @@ pub fn create_viper_prelude(
     let mut fields = Vec::new();
     // todo: support multi-word type
     fields.extend(global_vars.iter().map(|gv| ast.field(&gv.name, ast.int_type())));
+    fields.push(ast.field("local_mem", ast.int_type()));
+    fields.push(ast.field("shared_mem", ast.int_type()));
+
     let methods = create_shared_mem_methods(ast, &utils);
     (
         domains,

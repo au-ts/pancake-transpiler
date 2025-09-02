@@ -169,8 +169,8 @@ impl Stmt {
                     global: true,
                 }))
             },
-            [Symbol(l), Symbol(op), List(addr), Symbol(eq), List(exp)] 
-                if l == "local" && op == "mem" && eq == ":=" => {
+            [Symbol(op), List(addr), Symbol(eq), List(exp)] 
+                if op == "mem" && eq == ":=" => {
                 Ok(Self::Store(Store {
                     address: Expr::parse(addr)?,
                     value: Expr::parse(exp)?,
