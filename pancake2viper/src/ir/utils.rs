@@ -299,7 +299,10 @@ impl ExprSubstitution for Vec<Expr> {
 
 impl From<Arg> for Expr {
     fn from(value: Arg) -> Self {
-        Expr::Var(value.name)
+        Expr::Var(ir::Var {
+            name: value.name.clone(), 
+            global: None,
+        })
     }
 }
 

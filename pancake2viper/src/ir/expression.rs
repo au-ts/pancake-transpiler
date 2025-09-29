@@ -9,7 +9,7 @@ pub enum Expr {
     Const(i64),
     BoolLit(bool),
     GlobalVar(String),
-    Var(String),
+    Var(Var),
     Label(String),
     Struct(Struct),
     Field(Field),
@@ -32,6 +32,12 @@ pub enum Expr {
     ViperFieldAccess(ViperFieldAccess),
     SeqLength(SeqLength),
     Contains(Contains),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Var {
+    pub name: String,
+    pub global: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

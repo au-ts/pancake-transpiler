@@ -61,15 +61,13 @@ impl SexprFactory for SExprParser {
 
 impl Expr {
     fn parse(s: &[SExpr]) -> anyhow::Result<Self> {
-        // println!("{:?}", s);
         match s {
             [Symbol(cons), Symbol(word)] if cons == "Const" && word.starts_with("0x") => {
                 Ok(Self::Const(u64::from_str_radix(&word[2..], 16)? as i64))
             }
-            [Symbol(var), Symbol(l), Symbol(name)] if var == "Var" && l == "local" => Ok(Self::Var(name.clone())),
-            // todo: perhaps need to another enum for global var
-            [Symbol(var), Symbol(l), Symbol(name)] 
-                if var == "Var" && l == "global" => Ok(Self::GlobalVar(name.clone())),
+            [Symbol(var), Symbol(scope), Symbol(name)] if var == "Var" => {
+                Ok(Self::Var(Var {name: name.clone(), global: scope == "global"}))
+            }
             [Symbol(label), Symbol(name)] if label == "Label" => Ok(Self::Label(name.clone())),
             [Symbol(struc), exps @ ..] if struc == "Struct" => {
                 Ok(Self::Struct(Struct::new(Self::parse_slice(exps)?)))
@@ -227,41 +225,41 @@ impl Stmt {
             }
 
             // Shared loads
-            [Symbol(op), Symbol(size), Symbol(dst), List(exp)]
+            [Symbol(op), Symbol(size), Symbol(scope), Symbol(dst), List(exp)]
                 if op == "shared_mem_load" && size == "word" =>
             {
                 Ok(Self::SharedLoad(SharedLoad {
                     address: Expr::parse(exp)?,
-                    dst: Expr::Var(dst.into()),
+                    dst: Expr::Var(Var{name: dst.to_string(), global: scope == "global"}),
                 }))
             }
 
-            [Symbol(op), Symbol(size), Symbol(dst), List(exp)]
+            [Symbol(op), Symbol(size), Symbol(scope), Symbol(dst), List(exp)]
                 if op == "shared_mem_load" && size == "byte" =>
             {
                 Ok(Self::SharedLoadBits(SharedLoadBits {
                     address: Expr::parse(exp)?,
-                    dst: Expr::Var(dst.into()),
+                    dst: Expr::Var(Var{name: dst.to_string(), global: scope == "global"}),
                     size: MemOpBytes::Byte,
                 }))
             }
 
-            [Symbol(op), Symbol(size), Symbol(dst), List(exp)]
+            [Symbol(op), Symbol(size), Symbol(scope), Symbol(dst), List(exp)]
                 if op == "shared_mem_load" && size == "word32" =>
             {
                 Ok(Self::SharedLoadBits(SharedLoadBits {
                     address: Expr::parse(exp)?,
-                    dst: Expr::Var(dst.into()),
+                    dst: Expr::Var(Var{name: dst.to_string(), global: scope == "global"}),
                     size: MemOpBytes::HalfWord,
                 }))
             }
 
-            [Symbol(op), Symbol(size), Symbol(dst), List(exp)]
+            [Symbol(op), Symbol(size), Symbol(scope), Symbol(dst), List(exp)]
             if op == "shared_mem_load" && size == "word16" =>
             {
                 Ok(Self::SharedLoadBits(SharedLoadBits {
                     address: Expr::parse(exp)?,
-                    dst: Expr::Var(dst.into()),
+                    dst: Expr::Var(Var{name: dst.to_string(), global: scope == "global"}),
                     size: MemOpBytes::QuarterWord,
                 }))
             }

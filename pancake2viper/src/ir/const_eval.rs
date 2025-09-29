@@ -14,10 +14,6 @@ impl ConstEvalExpr for Expr {
         use Expr::*;
         match self {
             x @ (Const(_) | BoolLit(_) | Label(_) | Var(_) | GlobalVar(_)) => x,
-            // x @ Var(s) => match const_map.entry(s) {
-            //     Entry::Occupied(v) => Const(*v.get()),
-            //     Entry::Vacant(_) => x,
-            // },
             Struct(s) => Struct(ir::Struct {
                 elements: const_eval_vec(s.elements, options),
             }),

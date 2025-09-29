@@ -31,7 +31,7 @@ impl Mangleable for ir::Expr {
         match self {
             Const(_) | BaseAddr | BytesInWord | BoolLit(_) => (),
             GlobalVar(name) => *name = mangler.mangle_var(name)?.to_owned(),
-            Var(name) => *name = mangler.mangle_var(name)?.to_owned(),
+            Var(v) => v.name = mangler.mangle_var(&v.name)?.to_owned(),
             Label(label) => *label = Mangler::mangle_fn(label),
             Struct(struc) => struc.elements.mangle(mangler)?,
             Field(field) => field.obj.mangle(mangler)?,

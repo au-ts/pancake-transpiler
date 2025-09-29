@@ -433,11 +433,12 @@ impl<'a> TryToViper<'a> for ir::Expr {
                 BoolLit(b) if b => ast.true_lit(),
                 BoolLit(b) if !b => ast.false_lit(),
                 GlobalVar(name) => ctx.gv_access(&name),
-                Var(name) if name == "result" => ast.result_with_pos(
+                Var(v) if v.name == "result" => ast.result_with_pos(
                     ctx.get_type("result")?.to_viper_type(ctx),
                     ast.no_position(),
                 ),
-                Var(name) => ast.local_var(&name, ctx.get_type(&name)?.to_viper_type(ctx)),
+                Var(v) if v.global.unwrap_or(false) => ctx.gv_access(&v.name),
+                Var(v) => ast.local_var(&v.name, ctx.get_type(&v.name)?.to_viper_type(ctx)),
                 Label(_) => todo!(), // XXX: not sure if we need this
                 BaseAddr => ast.zero(),
                 BytesInWord => ast.int_lit(ctx.options.word_size as i64 / 8),

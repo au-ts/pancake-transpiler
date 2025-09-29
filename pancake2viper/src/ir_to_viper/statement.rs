@@ -208,9 +208,9 @@ impl<'a> TryToViper<'a> for ir::Annotation {
         use crate::ir::AnnotationType::*;
         match self.typ {
             Use => {
-                if let ir::Expr::Var(name) = self.expr {
-                    ctx.shared_override = Some(name.clone());
-                    return Ok(ast.comment(&format!("use {}", name)));
+                if let ir::Expr::Var(v) = self.expr {
+                    ctx.shared_override = Some(v.name.clone());
+                    return Ok(ast.comment(&format!("use {}", v.name)));
                 }
                 Err(ToViperError::InvalidAnnotation)
             }

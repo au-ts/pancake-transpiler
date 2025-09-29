@@ -8,7 +8,7 @@ use super::MemOpBytes;
 pub enum Expr {
     Const(i64),
     GlobalVar(String),
-    Var(String),
+    Var(Var),
     Label(String),
     Struct(Struct),
     Field(Field),
@@ -19,6 +19,12 @@ pub enum Expr {
     BaseAddr,
     BytesInWord,
     Call(ExprCall),
+}
+
+#[derive(Debug, Clone)]
+pub struct Var {
+    pub name: String,
+    pub global: bool, 
 }
 
 #[derive(Debug, Clone)]

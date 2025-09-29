@@ -29,7 +29,7 @@ impl TryToIR for pancake::FnDec {
         let mut body = args.iter().fold(self.body.to_ir()?, |scope, arg| {
             ir::Stmt::Definition(ir::Definition {
                 lhs: arg.name.clone(),
-                rhs: ir::Expr::Var(arg.name.clone()),
+                rhs: ir::Expr::Var(ir::Var {name: arg.name.clone(), global: None}),
                 scope: Box::new(scope),
             })
         });

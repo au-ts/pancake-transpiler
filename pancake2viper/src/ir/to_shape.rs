@@ -51,7 +51,7 @@ impl TryToShape for ir::Expr {
             x => Ok(match x {
                 Const(_) | UnOp(_) | BinOp(_) | Shift(_) | LoadBits(_) | Quantified(_)
                 | ArrayAccess(_) | AccessPredicate(_) | BaseAddr | BytesInWord => Shape::Simple,
-                Var(var) => ctx.get_type_no_mangle(var)?.to_shape(ctx)?,
+                Var(var) => ctx.get_type_no_mangle(&var.name)?.to_shape(ctx)?,
                 Label(_) => unreachable!("ToShape for Expr::Label"),
                 Load(load) => load.shape.clone(),
                 _ => unreachable!(),

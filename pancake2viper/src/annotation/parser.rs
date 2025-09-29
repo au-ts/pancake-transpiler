@@ -275,7 +275,7 @@ fn parse_expr(pairs: Pairs<Rule>) -> Expr {
             Rule::int_lit => Expr::Const(i64::from_pest(primary)),
             Rule::quantified => Expr::Quantified(Quantified::from_pest(primary)),
             Rule::expr => parse_expr(primary.into_inner()),
-            Rule::ident => Expr::Var(primary.as_str().to_owned()),
+            Rule::ident => Expr::Var(Var {name: primary.as_str().to_owned(), global: None}),
             Rule::old => Expr::Old(Old {
                 expr: Box::new(parse_expr(primary.into_inner())),
             }),

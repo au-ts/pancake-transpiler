@@ -3,6 +3,17 @@ use crate::{
     utils::{TranslationError, TryToIR, TryToIRGeneric},
 };
 
+impl TryToIR for pancake::Var {
+    type Output = ir::Var;
+
+    fn to_ir(self) -> Result<Self::Output, crate::utils::TranslationError> {
+        Ok(Self::Output {
+            name: self.name.clone(),
+            global: Some(self.global),
+        })
+    }
+}
+
 impl TryToIR for pancake::Struct {
     type Output = ir::Struct;
 
@@ -151,7 +162,7 @@ impl TryToIR for pancake::Expr {
         Ok(match self {
             Const(c) => Self::Output::Const(c),
             GlobalVar(varname) => Self::Output::GlobalVar(varname),
-            Var(varname) => Self::Output::Var(varname),
+            Var(v) => Self::Output::Var(v.to_ir()?),
             Label(label) => Self::Output::Label(label),
             Struct(struc) => Self::Output::Struct(struc.to_ir()?),
             Field(field) => Self::Output::Field(field.to_ir()?),
