@@ -200,6 +200,19 @@ impl<'a> ProgramToViper<'a> for Program {
             .map(|p| p.name.to_owned())
             .collect::<HashSet<_>>();
 
+        let mut ctx = ViperEncodeCtx::new(
+            types.clone(),
+            predicate_names.clone(),
+            ast,
+            options,
+            shared.clone(),
+            method_ctx.clone(),
+            model.clone(),
+            extern_methods.clone(),
+            extern_consts.clone(),
+        );
+        ctx.set_mode(TranslationMode::PrePost);
+
         let predicates = self
             .predicates
             .into_iter()
@@ -293,8 +306,8 @@ impl<'a> ProgramToViper<'a> for Program {
         methods.extend(abstract_methods.iter());
         methods.extend(program_methods.iter());
         functions.extend(fs.iter());
-        // todo: support multi-word type
-        fields.extend(self.global_vars.iter().map(|gv| ast.field(&gv.name, ast.int_type())));
+        fields.extend(self.global_vars.iter().map(|gv| 
+            ast.field(&gv.name, gv.typ.to_viper_type(&ctx))));
         Ok(ast.program(&domains, &fields, &functions, &predicates, &methods))
     }
 }

@@ -78,7 +78,6 @@ pub struct Model {
 #[derive(Debug, Clone)]
 pub struct Program {
     pub functions: Vec<FnDec>,
-    // todo: support multi-word shape
     pub global_vars: Vec<GlobalVar>,
     pub predicates: Vec<Predicate>,
     pub viper_functions: Vec<Function>,

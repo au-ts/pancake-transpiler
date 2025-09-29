@@ -342,8 +342,9 @@ impl Stmt {
         };
         match &decl[..] {
             // todo: clean up shape-checking support
-            [Int(_i), Symbol(l), Symbol(var), Symbol(eq), List(exp)] 
-                if l == "local" && eq == ":=" => 
+            [Int(1), Symbol(s), Symbol(var), Symbol(eq), List(exp)] |
+            [Symbol(_), Symbol(s), Symbol(var), Symbol(eq), List(exp)] 
+                if s == "local" && eq == ":=" => 
             {
                 Ok(Self::Declaration(Declaration {
                     lhs: var.clone(),
@@ -413,15 +414,13 @@ impl FnDec {
         match s {
             List(l) => match &l[..] {
                 // todo: clean up shape-checking support
-                [Int(_i), Symbol(fun_dec), Symbol(name), List(args), List(body)] if fun_dec == "func" => {
+                [Int(shape), Symbol(fun_dec), Symbol(name), List(args), List(body)] if fun_dec == "func" => {
                     let args = args.iter().map(Arg::parse).collect::<anyhow::Result<_>>()?;
                     let t: Vec<_> = body.iter().collect();
-                    let x = Stmt::parse(t);
-                    let body1 = x?;
                     Ok(Self {
                         fname: name.clone(),
                         args,
-                        body: body1,
+                        body: Stmt::parse(t)?,
                         rettyp: None,
                     })
                 }
@@ -442,11 +441,19 @@ impl GlobalVar {
     fn parse(s: SExpr) -> anyhow:: Result<Self> {
         match s {
             List(l) => match &l[..] {
-                [Int(i), Symbol(g), Symbol(var_name), Symbol(assign), List(body)] 
-                    if *i == 1 && g == "global" && assign == ":=" => {
-                    Ok(Self{
+                [Int(shape), Symbol(scope), Symbol(var_name), Symbol(assign), List(body)] 
+                    if *shape == 1 && scope == "global" && assign == ":=" => {
+                    Ok(Self {
                         name: var_name.clone(),
                         shape: Shape::Simple,
+                        value: Expr::parse(body)?,
+                    })
+                },
+                [Symbol(shape), Symbol(scope), Symbol(var_name), Symbol(assign), List(body)] 
+                    if scope == "global" && assign == ":=" => {
+                    Ok(Self {
+                        name: var_name.clone(),
+                        shape: Shape::parse(shape).unwrap(),
                         value: Expr::parse(body)?,
                     })
                 },
@@ -538,12 +545,12 @@ impl Program {
         for sexpr in sexprs {
             if let Ok(func) = FnDec::parse(sexpr.clone()) {
                 functions.push(func);
-            } 
+            }
             else if let Ok(var) = GlobalVar::parse(sexpr.clone()) {
                 global_vars.push(var);
             }
         }
-        // println!("Functions: {:?}", functions);
+
         Ok(pancake::Program {
             functions,
             global_vars,

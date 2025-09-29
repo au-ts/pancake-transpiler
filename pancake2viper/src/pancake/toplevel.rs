@@ -11,7 +11,6 @@ pub struct FnDec {
     pub rettyp: Option<Shape>,
 }
 
-// [Int(1), Symbol("global"), Symbol("x"), Symbol(":="), List([Symbol("Const"), Symbol("0x1")])]
 #[derive(Debug, Clone)]
 pub struct GlobalVar {
     pub name: String,
