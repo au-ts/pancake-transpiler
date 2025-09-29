@@ -13,7 +13,7 @@ impl ConstEvalExpr for Expr {
     fn const_eval(self, options: &EncodeOptions) -> Self {
         use Expr::*;
         match self {
-            x @ (Const(_) | BoolLit(_) | Label(_) | Var(_) | GlobalVar(_)) => x,
+            x @ (Const(_) | BoolLit(_) | Label(_) | Var(_)) => x,
             Struct(s) => Struct(ir::Struct {
                 elements: const_eval_vec(s.elements, options),
             }),

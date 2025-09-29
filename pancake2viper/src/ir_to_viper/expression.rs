@@ -432,7 +432,6 @@ impl<'a> TryToViper<'a> for ir::Expr {
                 Const(c) => ast.int_lit(c),
                 BoolLit(b) if b => ast.true_lit(),
                 BoolLit(b) if !b => ast.false_lit(),
-                GlobalVar(name) => ctx.gv_access(&name),
                 Var(v) if v.name == "result" => ast.result_with_pos(
                     ctx.get_type("result")?.to_viper_type(ctx),
                     ast.no_position(),

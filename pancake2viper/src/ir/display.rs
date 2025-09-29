@@ -51,7 +51,6 @@ impl Display for Expr {
         match self {
             Self::Const(c) => write!(f, "{}", c),
             Self::BoolLit(b) => write!(f, "{}", b),
-            Self::GlobalVar(v) => write!(f, "{}", v),
             Self::Var(v) => write!(f, "{}", v.name),
             Self::Label(l) => write!(f, "{}", l),
             Self::BaseAddr => write!(f, "@base"),

@@ -8,7 +8,6 @@ use super::{MemOpBytes, Type};
 pub enum Expr {
     Const(i64),
     BoolLit(bool),
-    GlobalVar(String),
     Var(Var),
     Label(String),
     Struct(Struct),
