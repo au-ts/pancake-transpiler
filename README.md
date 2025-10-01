@@ -38,20 +38,24 @@ To transpile a Pancake file to Viper:
 pancake2viper transpile foobar.🥞 foobar.vpr
 ```
 
+<!-- 
 To verify a Pancake file: 
 ```bash
 pancake2viper verify foobar.🥞
 ```
+-->
 
 Also supports input via stdin:
 ```bash
 cat foo.🥞 bar.🥞 | pancake2viper verify -
 ```
 
+<!-- 
 To verify a Pancake program running on a 32-bit architecture and a static heap of 1 KiB:
 ```bash
 pancake2viper verify --word-size 32 --heap-size 1024 foobar.🥞
 ```
+-->
 
 <!-- 
 ### VS Code Extension
