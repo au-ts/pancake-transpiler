@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use tracing::debug;
 use pest::Parser as _;
 use pest_derive::Parser;
 use regex::Regex;
@@ -364,6 +365,12 @@ impl Stmt {
                     args: Expr::parse_slice(args)?,
                 }))
             }
+            [Symbol(op), Symbol(fname), List(args)] if op == "tail_call" => {
+                Ok(Self::TailCall(TailCall {
+                    fname: Expr::Label(fname.clone()),
+                    args: Expr::parse_slice(args)?,
+                }))
+            }
             [List(stmt)] => Self::parse(stmt.iter().collect::<Vec<_>>()),
             x => panic!("Could not parse stmt: {:?}", x),
         }
@@ -379,6 +386,15 @@ impl Stmt {
             [Int(1), Symbol(s), Symbol(var), Symbol(eq), List(exp)] |
             [Symbol(_), Symbol(s), Symbol(var), Symbol(eq), List(exp)]
                 if s == "local" && eq == ":=" => 
+            {
+                Ok(Self::Declaration(Declaration {
+                    lhs: var.clone(),
+                    rhs: Expr::parse(exp)?,
+                    scope: Box::new(scope),
+                }))
+            },
+            [Int(1), Symbol(var), Symbol(eq), List(exp)]
+                if eq == ":=" =>
             {
                 Ok(Self::Declaration(Declaration {
                     lhs: var.clone(),
@@ -481,12 +497,12 @@ impl FnDec {
                     })
                 }
                 _ => {
-                    // println!("List: {:?}", l);
+                    debug!("List not matching: {:?}", l);
                     Err(anyhow!("FnDec Shape of SExpr::List does not match"))
                 },
             },
             _ => {
-                // println!("SExpr: {:?}", s);
+                debug!("SExpr not matching: {:?}", s);
                 Err(anyhow!("SExpr is not a list"))
             },
         }
