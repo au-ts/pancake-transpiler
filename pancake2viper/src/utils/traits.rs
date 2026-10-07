@@ -1,11 +1,11 @@
+#[cfg(feature = "viper")]
 use viper::{AstFactory, Expr, LocalVarDecl};
 
 use crate::ir::{self, Type};
 
-use super::{
-    errors::ToViperError, shape::Shape, EncodeOptions, Mangler, TranslationError, TypeContext,
-    ViperEncodeCtx,
-};
+#[cfg(feature = "viper")]
+use super::{errors::ToViperError, ViperEncodeCtx};
+use super::{shape::Shape, EncodeOptions, Mangler, TranslationError, TypeContext};
 
 pub trait TryToIR {
     type Output;
@@ -32,16 +32,19 @@ pub trait ExprTypeResolution {
     ) -> Result<Type, TranslationError>;
 }
 
+#[cfg(feature = "viper")]
 pub trait ForceToBool<'a> {
     type Output;
     fn force_to_bool(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError>;
 }
 
+#[cfg(feature = "viper")]
 pub trait TryToViper<'a> {
     type Output;
     fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Result<Self::Output, ToViperError>;
 }
 
+#[cfg(feature = "viper")]
 pub trait ToViper<'a> {
     type Output;
     fn to_viper(self, ctx: &mut ViperEncodeCtx<'a>) -> Self::Output;
@@ -53,6 +56,7 @@ pub trait ToViper<'a> {
     //     todo!()
     // }
 }
+#[cfg(feature = "viper")]
 pub trait ToViperType<'a> {
     fn to_viper_type(&self, ctx: &ViperEncodeCtx<'a>) -> viper::Type<'a>;
 }
@@ -85,6 +89,7 @@ pub trait ExprSubstitution {
     fn substitute(&mut self, old: &ir::Expr, new: &ir::Expr) -> bool;
 }
 
+#[cfg(feature = "viper")]
 pub trait ProgramToViper<'a> {
     fn to_viper(
         self,
@@ -94,6 +99,7 @@ pub trait ProgramToViper<'a> {
     ) -> Result<viper::Program<'a>, ToViperError>;
 }
 
+#[cfg(feature = "viper")]
 pub trait ViperUtils<'a> {
     fn new_var(&self, name: &str, typ: viper::Type) -> (LocalVarDecl<'a>, Expr<'a>);
     fn seq_slice(&self, seq: Expr<'a>, lower: Expr<'a>, upper: Expr<'a>) -> Expr<'a>;

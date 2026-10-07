@@ -1,6 +1,10 @@
-use crate::utils::{EncodeOptions, ToViperError, TryToViper, ViperEncodeCtx, ViperUtils};
+use crate::utils::EncodeOptions;
+#[cfg(feature = "viper")]
+use crate::utils::{ToViperError, TryToViper, ViperEncodeCtx, ViperUtils};
 
-use super::{Expr, MemOpBytes, Model, Shared, SharedPerm};
+use super::{Expr, MemOpBytes, Shared, SharedPerm};
+#[cfg(feature = "viper")]
+use super::Model;
 use std::{collections::HashSet, fmt::Display};
 
 #[derive(Clone, Default)]
@@ -11,6 +15,7 @@ pub struct SharedContext {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(not(feature = "viper"), allow(dead_code))] // read by the Viper encoding
 struct SharedInternal {
     name: String,
     typ: SharedPerm,
@@ -21,6 +26,7 @@ struct SharedInternal {
     stride: i64,
 }
 
+#[cfg(feature = "viper")]
 impl SharedInternal {
     pub fn get_precondition<'a>(
         &self,
@@ -197,6 +203,7 @@ impl SharedContext {
             })
     }
 
+    #[cfg(feature = "viper")]
     pub fn get_switch<'a>(
         &self,
         ctx: &ViperEncodeCtx<'a>,
@@ -239,6 +246,7 @@ impl SharedContext {
             })
     }
 
+    #[cfg(feature = "viper")]
     pub fn gen_boilerplate<'a>(
         &self,
         ctx: &mut ViperEncodeCtx<'a>,

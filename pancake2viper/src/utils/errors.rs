@@ -1,4 +1,6 @@
-use crate::{ir, pancake};
+use crate::ir;
+#[cfg(feature = "pancake")]
+use crate::pancake;
 
 use super::shape::Shape;
 
@@ -40,6 +42,7 @@ pub enum TranslationError {
     UnknownShape(String),
     #[error("Function {0} has no return type set")]
     UnknownReturnType(String),
+    #[cfg(feature = "pancake")]
     #[error("Invalid label, might be function pointer. Got {0:?}")]
     InvalidLabel(pancake::Expr),
     #[error("Viper field not found {0}")]

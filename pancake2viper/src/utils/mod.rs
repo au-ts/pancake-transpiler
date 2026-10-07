@@ -1,6 +1,7 @@
 mod contexts;
 mod errors;
 mod mangler;
+#[cfg(feature = "viper")]
 mod misc;
 mod shape;
 mod traits;
@@ -10,6 +11,7 @@ use std::collections::HashMap;
 pub use contexts::*;
 pub use errors::*;
 pub use mangler::{Mangler, VariableType};
+#[cfg(feature = "viper")]
 pub use misc::ViperHandle;
 pub use shape::Shape;
 pub use traits::*;

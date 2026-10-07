@@ -1,6 +1,6 @@
 use crate::{
     ir::{Annotation, AnnotationType, Definition, Expr, Seq, Stmt, Type},
-    utils::{Shape, ToType, TryToIR},
+    utils::TryToIR,
 };
 
 impl<T: TryToIR> TryToIR for Vec<T> {
@@ -16,15 +16,6 @@ impl<T: TryToIR, const N: usize> TryToIR for [T; N] {
 
     fn to_ir(self) -> Result<Self::Output, crate::utils::TranslationError> {
         self.into_iter().map(TryToIR::to_ir).collect()
-    }
-}
-
-impl ToType for Shape {
-    fn to_type(&self, _is_annot: bool) -> Type {
-        match self {
-            Self::Simple => Type::Int,
-            Self::Nested(inner) => Type::Struct(inner.clone()),
-        }
     }
 }
 

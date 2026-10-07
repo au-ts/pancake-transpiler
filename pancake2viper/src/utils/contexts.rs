@@ -1,16 +1,20 @@
-use std::{
-    collections::{HashMap, HashSet},
-    rc::Rc,
-};
+use std::collections::HashMap;
+#[cfg(feature = "viper")]
+use std::{collections::HashSet, rc::Rc};
 
+#[cfg(feature = "viper")]
 use viper::{AstFactory, Declaration, LocalVarDecl};
 
+#[cfg(feature = "viper")]
 use crate::{
-    ir::{self, shared::SharedContext, types::Type, AnnotationType, FnDec, Model},
+    ir::{shared::SharedContext, Model},
     viper_prelude::{utils::Utils, HeapHelper},
 };
+use crate::ir::{self, types::Type, AnnotationType, FnDec};
 
-use super::{mangler::Mangler, TranslationError, RESERVED};
+#[cfg(feature = "viper")]
+use super::mangler::Mangler;
+use super::{TranslationError, RESERVED};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub enum TranslationMode {
@@ -142,6 +146,7 @@ impl Default for TypeContext {
     }
 }
 
+#[cfg(feature = "viper")]
 pub struct ViperEncodeCtx<'a> {
     mode: TranslationMode,
     pub ast: AstFactory<'a>,
@@ -197,6 +202,7 @@ impl Default for EncodeOptions {
     }
 }
 
+#[cfg(feature = "viper")]
 impl<'a> ViperEncodeCtx<'a> {
     pub fn new(
         types: TypeContext,

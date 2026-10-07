@@ -68,5 +68,11 @@ jobs:
         run: |
           echo "CAKE_ML=${CAKE_ML_INSTALL}/cake" >> $GITHUB_ENV
 
+      - name: Build and test the annotation front end alone (no features)
+        run: cargo test -p pancake2viper --no-default-features --verbose
+
+      - name: Build the Pancake front end and the CLI without the Viper backend
+        run: cargo build -p pancake2viper --lib --no-default-features --features pancake,cli --verbose
+
       - name: Run tests
         run: cargo test -p pancake2viper --release --verbose -- --test-threads=1

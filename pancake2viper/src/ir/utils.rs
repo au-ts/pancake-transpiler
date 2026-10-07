@@ -1,17 +1,22 @@
 use std::{collections::HashSet, ops::Add};
 
+#[cfg(feature = "viper")]
 use viper::AstFactory;
+#[cfg(feature = "viper")]
+use crate::utils::ViperUtils;
+#[cfg(feature = "viper")]
+use crate::ir::Model;
 
 use crate::{
     ir,
-    utils::{ExprSubstitution, Shape, ToType, TranslationError, TryToShape, ViperUtils},
+    utils::{ExprSubstitution, Shape, ToType, TranslationError, TryToShape},
 };
 
 use super::{
     expression::{Expr, Struct},
     shared::SharedOpType,
     statement::MemOpBytes,
-    Arg, BinOp, BinOpType, Decl, Model, Program, SharedPerm, ShiftType, Type, UnOpType,
+    Arg, BinOp, BinOpType, Decl, Program, SharedPerm, ShiftType, Type, UnOpType,
 };
 
 impl Expr {
@@ -354,6 +359,7 @@ impl Program {
     }
 }
 
+#[cfg(feature = "viper")]
 impl Model {
     pub fn get_default_args<'a>(
         &self,

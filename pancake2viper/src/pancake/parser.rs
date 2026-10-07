@@ -1,7 +1,5 @@
 use anyhow::anyhow;
 use tracing::debug;
-use pest::Parser as _;
-use pest_derive::Parser;
 use regex::Regex;
 use sexpr_parser::{Parser, SexprFactory};
 use std::{
@@ -532,45 +530,6 @@ impl GlobalVar {
                 _ => Err(anyhow!("GlobalVar Shape of SExpr::List does not match")),
             },
             _ => Err(anyhow!("SExpr is not a list")),
-        }
-    }
-}
-
-#[derive(Parser)]
-#[grammar = "src/pancake/shape.pest"]
-struct ShapeParser;
-
-impl Shape {
-    fn parse_term(pair: pest::iterators::Pair<'_, Rule>) -> anyhow::Result<Self> {
-        let n = pair.as_str().parse::<u64>()?;
-        Ok(if n == 1 {
-            Self::Simple
-        } else {
-            Self::Nested((0..n).map(|_| Self::Simple).collect())
-        })
-    }
-
-    pub fn parse(s: &str) -> anyhow::Result<Self> {
-        let top = ShapeParser::parse(Rule::top, s)?
-            .next()
-            .unwrap()
-            .into_inner()
-            .next()
-            .unwrap();
-        match top.as_rule() {
-            Rule::term => Self::parse_term(top),
-            Rule::shape => {
-                let inner = top
-                    .into_inner()
-                    .map(|pair| match pair.as_rule() {
-                        Rule::term => Self::parse_term(pair),
-                        Rule::shape => Self::parse(pair.as_str()),
-                        _ => unreachable!(),
-                    })
-                    .collect::<Result<Vec<_>, _>>();
-                Ok(Shape::Nested(inner?))
-            }
-            _ => unreachable!(),
         }
     }
 }
